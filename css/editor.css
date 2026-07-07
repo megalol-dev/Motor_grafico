@@ -1,0 +1,144 @@
+#editor-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: #000;
+}
+
+.editor-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* BARRA SUPERIOR */
+.editor-toolbar {
+    background: #aa0000;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    border-bottom: 2px solid #444;
+}
+
+.editor-toolbar button,
+.editor-toolbar input,
+.editor-left-panel button,
+.editor-side button {
+    font-family: "Courier New", monospace;
+}
+
+/* ZONA PRINCIPAL */
+.editor-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 180px 1fr 180px;
+    gap: 24px;
+    align-items: center;
+    padding: 24px;
+    background: #000;
+}
+
+/* PANEL IZQUIERDO Y DERECHO */
+.editor-left-panel,
+.editor-side {
+    display: flex;
+    justify-content: center;
+}
+
+.editor-panel-box {
+    width: 100%;
+    min-height: 320px;
+    background: #aa0000;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.editor-panel-box h3 {
+    margin: 0 0 10px;
+    color: #000;
+    text-align: center;
+    font-size: 18px;
+    text-transform: uppercase;
+}
+
+.editor-left-panel button,
+.editor-side button {
+    padding: 10px 12px;
+    background: #666;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* ZONA CENTRAL */
+.editor-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* MARCO GRANDE DEL CANVAS */
+.editor-canvas-frame {
+    width: min(1100px, 100%);
+    height: min(620px, 72vh);
+    border: 2px solid #444;
+    background: #111;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* WRAPPER CON SCROLL */
+.editor-canvas-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: #222;
+    display: block;
+}
+
+/* CANVAS */
+#editor-canvas {
+    display: block;
+    image-rendering: pixelated;
+    margin: 0 auto;
+    background: #000;
+}
+
+/* RESPONSIVE BÁSICO */
+@media (max-width: 1200px) {
+    .editor-main {
+        grid-template-columns: 150px 1fr 150px;
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .editor-panel-box {
+        min-height: 280px;
+    }
+}
+
+@media (max-width: 900px) {
+    .editor-main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+
+    .editor-left-panel,
+    .editor-side {
+        justify-content: stretch;
+    }
+
+    .editor-canvas-frame {
+        width: 100%;
+        height: 60vh;
+    }
+}
