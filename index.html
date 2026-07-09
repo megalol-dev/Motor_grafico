@@ -1,302 +1,268 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
+  <head>
+    <!-- ===================================================== -->
+    <!-- CONFIGURACIÓN GENERAL -->
+    <!-- ===================================================== -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<head>
-
-  <!-- ===================================================== -->
-  <!-- CONFIGURACIÓN GENERAL -->
-  <!-- ===================================================== -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Juego demo aventura gráfica</title>
-
-  <!-- ===================================================== -->
-  <!-- HOJAS DE ESTILO -->
-  <!-- ===================================================== -->
-  <link rel="stylesheet" href="css/ui.css" />
-  <link rel="stylesheet" href="css/game.css" />
-  <link rel="stylesheet" href="css/editor.css" />
-
-</head>
-
-<body>
-
-  <!-- ===================================================== -->
-  <!-- APP PRINCIPAL -->
-  <!-- ===================================================== -->
-  <main id="app">
+    <title>Juego demo aventura gráfica</title>
 
     <!-- ===================================================== -->
-    <!-- PANTALLA DE INICIO -->
+    <!-- HOJAS DE ESTILO -->
     <!-- ===================================================== -->
-    <section id="title-screen" class="screen active">
+    <link rel="stylesheet" href="css/ui.css" />
+    <link rel="stylesheet" href="css/game.css" />
+    <link rel="stylesheet" href="css/editor.css" />
+  </head>
 
-      <div class="title-box">
-
-        <h1>JUEGO DEMO AVENTURA GRÁFICA</h1>
-
-        <p class="subtitle">
-          Prototipo base estilo aventura gráfica retro
-        </p>
-
-        <p class="blink-text">
-          Pulsa START
-        </p>
-
-        <button id="title-start-btn" class="main-btn">
-          Start
-        </button>
-
-      </div>
-
-    </section>
-
-
+  <body>
     <!-- ===================================================== -->
-    <!-- PANTALLA DE SELECCIÓN DE PERSONAJES -->
+    <!-- APP PRINCIPAL -->
     <!-- ===================================================== -->
-    <section id="party-screen" class="screen">
-    
-      <div class="party-box">
-    
-        <h2>Elige a 3 personajes para crear un grupo</h2>
-  
-        <div id="party-grid" class="party-grid"></div>
-    
-        <div class="party-summary">
-          <span>Elegidos:</span>
-          <strong id="selection-text">Selecciona 3 personajes</strong>
+    <main id="app">
+      <!-- ===================================================== -->
+      <!-- PANTALLA DE INICIO -->
+      <!-- ===================================================== -->
+      <section id="title-screen" class="screen active">
+        <div class="title-box">
+          <h1>JUEGO DEMO AVENTURA GRÁFICA</h1>
+
+          <p class="subtitle">Prototipo base estilo aventura gráfica retro</p>
+
+          <p class="blink-text">Pulsa START</p>
+
+          <button id="title-start-btn" class="main-btn">Start</button>
         </div>
-    
-        <button id="party-start-btn" class="main-btn" disabled>
-          Start Game
-        </button>
-    
-      </div>
-    
-    </section>
+      </section>
 
-    <!-- ===================================================== -->
-    <!-- PANTALLA DEL JUEGO -->
-    <!-- ===================================================== -->
-    <section id="game-screen" class="screen">
+      <!-- ===================================================== -->
+      <!-- PANTALLA DE SELECCIÓN DE PERSONAJES -->
+      <!-- ===================================================== -->
+      <section id="party-screen" class="screen">
+        <div class="party-box">
+          <h2>Elige a 3 personajes para crear un grupo</h2>
 
-      <main class="game-screen">
+          <div id="party-grid" class="party-grid"></div>
 
-        <section class="game-frame">
-
-          <!-- ================================================= -->
-          <!-- ZONA DE JUEGO -->
-          <!-- ================================================= -->
-          <section class="play-area">
-
-            <canvas id="game-canvas" width="1248" height="540"></canvas>
-
-          </section>
-
-          <!-- ================================================= -->
-          <!-- INTERFAZ -->
-          <!-- ================================================= -->
-          <section class="ui-area">
-
-            <!-- =============================================== -->
-            <!-- TEXTO DE ACCIONES -->
-            <!-- =============================================== -->
-            <div id="action-line" class="action-line">
-              Walk to ...
-            </div>
-
-            <!-- =============================================== -->
-            <!-- VERBOS + CAMBIO DE PERSONAJES -->
-            <!-- =============================================== -->
-            <div class="verbs-characters-row">
-
-              <!-- ============================================= -->
-              <!-- PANEL DE VERBOS -->
-              <!-- ============================================= -->
-              <div id="verbs-panel" class="verbs-panel">
-
-                <button class="verb-btn">Push</button>
-                <button class="verb-btn">Open</button>
-                <button class="verb-btn">Walk to</button>
-                <button class="verb-btn">Unlock</button>
-                <button class="verb-btn">Turn on</button>
-
-                <button class="verb-btn">Pull</button>
-                <button class="verb-btn">Close</button>
-                <button class="verb-btn">Pick up</button>
-                <button class="verb-btn">New kid</button>
-                <button class="verb-btn">Turn off</button>
-
-                <button class="verb-btn">Give</button>
-                <button class="verb-btn">Read</button>
-                <button class="verb-btn">What is</button>
-                <button class="verb-btn">Use</button>
-                <button class="verb-btn">Fix</button>
-
-              </div>
-
-              <!-- ============================================= -->
-              <!-- PANEL CAMBIO DE PERSONAJES -->
-              <!-- ============================================= -->
-              <div class="character-switch-panel">
-
-                <button class="player-btn" data-character="slot1">
-                  PJ1
-                </button>
-
-                <button class="player-btn" data-character="slot2">
-                  PJ2
-                </button>
-
-                <button class="player-btn" data-character="slot3">
-                  PJ3
-                </button>
-
-              </div>
-
-            </div>
-
-            <!-- =============================================== -->
-            <!-- INVENTARIO -->
-            <!-- =============================================== -->
-            <div class="inventory-panel">
-
-              <div class="inventory-grid">
-
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-                <div class="inventory-slot"></div>
-
-              </div>
-
-            </div>
-
-          </section>
-
-        </section>
-
-      </main>
-
-    </section>
-
-    <!-- ===================================================== -->
-    <!-- EDITOR DE MAPAS -->
-    <!-- ===================================================== -->
-    <section id="editor-screen" class="screen">
-
-      <div class="editor-container">
-
-        <!-- ================================================= -->
-        <!-- TOOLBAR SUPERIOR -->
-        <!-- ================================================= -->
-        <div class="editor-toolbar">
-
-          <input type="file" id="map-upload" accept="image/png" />
-
-          <button id="load-project-img">
-            Editar
-          </button>
-
-          <button id="save-map-btn">
-            Guardar JSON
-          </button>
-
-        </div>
-
-        <!-- ================================================= -->
-        <!-- CONTENIDO PRINCIPAL EDITOR -->
-        <!-- ================================================= -->
-        <div class="editor-main">
-
-          <!-- =============================================== -->
-          <!-- PANEL IZQUIERDO -->
-          <!-- =============================================== -->
-          <aside class="editor-left-panel">
-
-            <div class="editor-panel-box">
-
-              <h3>FISICAS</h3>
-
-              <button id="paint-collision-btn">
-                Modo colisión
-              </button>
-
-              <button id="erase-mode-btn">
-                Modo borrar
-              </button>
-
-            </div>
-
-          </aside>
-
-          <!-- =============================================== -->
-          <!-- CANVAS EDITOR -->
-          <!-- =============================================== -->
-          <div class="editor-center">
-
-            <div class="editor-canvas-frame">
-
-              <div class="editor-canvas-wrapper">
-
-                <canvas id="editor-canvas"></canvas>
-
-              </div>
-
-            </div>
-
+          <div class="party-summary">
+            <span>Elegidos:</span>
+            <strong id="selection-text">Selecciona 3 personajes</strong>
           </div>
 
-          <!-- =============================================== -->
-          <!-- PANEL DERECHO -->
-          <!-- =============================================== -->
-          <aside class="editor-side">
+          <button id="party-start-btn" class="main-btn" disabled>
+            Start Game
+          </button>
+        </div>
+      </section>
 
-            <div class="editor-panel-box">
+      <!-- ===================================================== -->
+      <!-- PANTALLA DEL JUEGO -->
+      <!-- ===================================================== -->
+      <section id="game-screen" class="screen">
+        <main class="game-screen">
+          <section class="game-frame">
+            <!-- ================================================= -->
+            <!-- ZONA DE JUEGO -->
+            <!-- ================================================= -->
+            <section class="play-area">
+              <canvas id="game-canvas" width="1248" height="540"></canvas>
+            </section>
 
-              <h3>EVENTOS</h3>
+            <!-- ================================================= -->
+            <!-- INTERFAZ -->
+            <!-- ================================================= -->
+            <section class="ui-area">
+              <!-- =============================================== -->
+              <!-- TEXTO DE ACCIONES -->
+              <!-- =============================================== -->
+              <div id="action-line" class="action-line">Walk to ...</div>
 
-              <button>+ Teleport</button>
-              <button>+ NPC</button>
-              <button>+ Objeto</button>
+              <!-- =============================================== -->
+              <!-- VERBOS + CAMBIO DE PERSONAJES -->
+              <!-- =============================================== -->
+              <div class="verbs-characters-row">
+                <!-- ============================================= -->
+                <!-- PANEL DE VERBOS -->
+                <!-- ============================================= -->
+                <div id="verbs-panel" class="verbs-panel">
+                  <button class="verb-btn">Push</button>
+                  <button class="verb-btn">Open</button>
+                  <button class="verb-btn">Walk to</button>
+                  <button class="verb-btn">Unlock</button>
+                  <button class="verb-btn">Turn on</button>
 
+                  <button class="verb-btn">Pull</button>
+                  <button class="verb-btn">Close</button>
+                  <button class="verb-btn">Pick up</button>
+                  <button class="verb-btn">New kid</button>
+                  <button class="verb-btn">Turn off</button>
+
+                  <button class="verb-btn">Give</button>
+                  <button class="verb-btn">Read</button>
+                  <button class="verb-btn">What is</button>
+                  <button class="verb-btn">Use</button>
+                  <button class="verb-btn">Fix</button>
+                </div>
+
+                <!-- ============================================= -->
+                <!-- PANEL CAMBIO DE PERSONAJES -->
+                <!-- ============================================= -->
+                <div class="character-switch-panel">
+                  <button class="player-btn" data-character="slot1">PJ1</button>
+
+                  <button class="player-btn" data-character="slot2">PJ2</button>
+
+                  <button class="player-btn" data-character="slot3">PJ3</button>
+                </div>
+              </div>
+
+              <!-- =============================================== -->
+              <!-- INVENTARIO -->
+              <!-- =============================================== -->
+              <div class="inventory-panel">
+                <div class="inventory-grid">
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                  <div class="inventory-slot"></div>
+                </div>
+              </div>
+            </section>
+          </section>
+        </main>
+      </section>
+
+      <!-- ===================================================== -->
+      <!-- EDITOR DE MAPAS -->
+      <!-- ===================================================== -->
+      <section id="editor-screen" class="screen">
+        <div class="editor-container">
+          <!-- ================================================= -->
+          <!-- TOOLBAR SUPERIOR -->
+          <!-- ================================================= -->
+          <div class="editor-toolbar">
+            <input type="file" id="map-upload" accept="image/png" />
+
+            <button id="load-project-img">Editar</button>
+
+            <button id="save-map-btn">Guardar JSON</button>
+          </div>
+
+          <!-- ================================================= -->
+          <!-- CONTENIDO PRINCIPAL EDITOR -->
+          <!-- ================================================= -->
+          <div class="editor-main">
+            <!-- =============================================== -->
+            <!-- PANEL IZQUIERDO -->
+            <!-- =============================================== -->
+            <aside class="editor-left-panel">
+              <div class="editor-panel-box">
+                <!-- =============================================== -->
+                <!-- HERRAMIENTAS DE FÍSICAS -->
+                <!-- =============================================== -->
+
+                <h3>FÍSICAS</h3>
+
+                <button id="paint-collision-btn">Pintar colisión</button>
+
+                <button id="erase-mode-btn">Borrar colisión</button>
+
+                <hr class="editor-separator" />
+
+                <!-- =============================================== -->
+                <!-- HERRAMIENTAS DE OBJETOS -->
+                <!-- =============================================== -->
+
+                <h3>OBJETOS</h3>
+
+                <button id="edit-object-btn">Editar objetos</button>
+
+                <button id="add-object-btn">Añadir objeto</button>
+
+                <button id="delete-object-btn">Eliminar objeto</button>
+
+                <hr class="editor-separator" />
+
+                <!-- =============================================== -->
+                <!-- HERRAMIENTAS DE EVENTOS -->
+                <!-- =============================================== -->
+
+                <h3>EVENTOS</h3>
+
+                <button id="add-teleport-btn">+ Teleport</button>
+
+                <button id="add-npc-btn">+ NPC</button>
+              </div>
+            </aside>
+
+            <!-- =============================================== -->
+            <!-- HERRAMIENTAS ESPECIALES -->
+            <!-- =============================================== -->
+
+            <div class="editor-workspace">
+              <div class="editor-special-tools">
+                <button id="toggle-grid-btn">Quitar / Ver rejilla</button>
+              </div>
+
+              <div class="editor-center">
+                <div class="editor-canvas-frame">
+                  <div class="editor-canvas-wrapper">
+                    <canvas id="editor-canvas"></canvas>
+                  </div>
+                </div>
+              </div>
             </div>
 
-          </aside>
+            
 
+            <!-- =============================================== -->
+            <!-- PANEL DERECHO -->
+            <!-- =============================================== -->
+
+            <!-- =============================================== -->
+            <!-- INSPECTOR -->
+            <!-- =============================================== -->
+
+            <aside class="editor-side">
+              <div class="editor-panel-box">
+                <h3>INSPECTOR</h3>
+
+                <div id="editor-inspector">
+                  <p class="editor-placeholder">
+                    No hay ningún objeto seleccionado.
+                  </p>
+                </div>
+              </div>
+            </aside>
+          </div>
         </div>
+      </section>
+    </main>
 
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- ===================================================== -->
-  <!-- SCRIPTS -->
-  <!-- ===================================================== -->
-  <script src="js/config.js"></script>
-  <script src="js/editor.js"></script>
-  <script src="js/game.js"></script>
-  <script src="js/app.js"></script>
-
-</body>
-
+    <!-- ===================================================== -->
+    <!-- SCRIPTS -->
+    <!-- ===================================================== -->
+    <script src="js/config.js"></script>
+    <script src="js/objects.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>

@@ -31,13 +31,19 @@
 
 /* ZONA PRINCIPAL */
 .editor-main {
+
     flex: 1;
+
     display: grid;
+
     grid-template-columns: 180px 1fr 180px;
+
     gap: 24px;
+
     align-items: center;
+
     padding: 24px;
-    background: #000;
+
 }
 
 /* PANEL IZQUIERDO Y DERECHO */
@@ -77,11 +83,15 @@
 
 /* ZONA CENTRAL */
 .editor-center {
+
     display: flex;
-    align-items: center;
+
     justify-content: center;
+
+    align-items: center;
+
     min-width: 0;
-    min-height: 0;
+
 }
 
 /* MARCO GRANDE DEL CANVAS */
@@ -113,32 +123,107 @@
     background: #000;
 }
 
-/* RESPONSIVE BÁSICO */
-@media (max-width: 1200px) {
-    .editor-main {
-        grid-template-columns: 150px 1fr 150px;
-        gap: 16px;
-        padding: 16px;
-    }
 
-    .editor-panel-box {
-        min-height: 280px;
-    }
+
+/* ===================================================== */
+/* SEPARADORES PANEL EDITOR */
+/* ===================================================== */
+
+.editor-separator {
+
+    width: 100%;
+    border: none;
+    border-top: 2px solid #770000;
+    margin: 10px 0;
+
 }
 
-@media (max-width: 900px) {
-    .editor-main {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
-    }
 
-    .editor-left-panel,
-    .editor-side {
-        justify-content: stretch;
-    }
+/* ===================================================== */
+/* TEXTO PANEL DERECHO */
+/* ===================================================== */
 
-    .editor-canvas-frame {
-        width: 100%;
-        height: 60vh;
-    }
+.editor-placeholder {
+
+    color: white;
+    text-align: center;
+    line-height: 1.6;
+
+}
+
+
+/* ===================================== */
+/* INSPECTOR */
+/* ===================================== */
+
+.editor-input,
+.editor-textarea {
+
+    width: 100%;
+
+    margin-top: 4px;
+    margin-bottom: 12px;
+
+    background: #222;
+
+    color: white;
+
+    border: 1px solid #777;
+
+    font-family: "Courier New", monospace;
+
+    padding: 6px;
+
+}
+
+.editor-textarea {
+
+    min-height: 80px;
+
+    resize: vertical;
+
+}
+
+/* ------------------------------------------ */
+/* BOTÓN DESHABILITADO */
+/* ------------------------------------------ */
+
+.editor-left-panel button:disabled {
+
+    opacity: 0.45;
+
+    cursor: default;
+
+    filter: grayscale(100%);
+}
+
+
+/* ===================================================== */
+/* BARRA DE HERRAMIENTAS ESPECIALES */
+/* ===================================================== */
+
+
+
+.editor-special-tools button {
+
+    font-family: "Courier New", monospace;
+
+}
+
+.editor-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    align-self: start;
+}
+
+.editor-special-tools {
+    background: #aa0000;
+    padding: 12px 18px;
+    border: 2px solid #770000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0;
 }

@@ -19,7 +19,7 @@
       "hitboxHeight": 16,
       "spriteWidth": 16,
       "spriteHeight": 16,
-      "sprite": "key.png",
+      "sprite": "001_key.png",
       "visible": true,
       "pickup": true,
       "collected": false
@@ -35,7 +35,7 @@
       "hitboxHeight": 60,
       "spriteWidth": 50,
       "spriteHeight": 60,
-      "sprite": "door.png",
+      "sprite": "002_door_main.png",
       "visible": true,
       "pickup": false,
       "locked": true
