@@ -414,7 +414,14 @@ window.EditorModule = (() => {
       sprite: libraryItem.sprite,
 
       visible: true,
-      pickup: true,
+
+      // -------------------------
+      // COMPORTAMIENTO
+      // -------------------------
+
+      pickup: libraryItem.pickup ?? false,
+      locked: libraryItem.locked ?? false,
+
       collected: false,
     };
 

@@ -1,5 +1,5 @@
 {
-  "image": "map1.png",
+  "image": "map2.png",
   "tileWidth": 24,
   "tileHeight": 30,
   "cols": 32,
@@ -162,18 +162,18 @@
       1,
       1,
       1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
     ],
     [
       1,
@@ -196,62 +196,19 @@
       1,
       1,
       1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
     ]
   ],
-  "objects": [
-    {
-      "id": "object_1",
-      "name": "Llave",
-      "description": "Es una llave pequeña y dorada.",
-      "x": 615,
-      "y": 54,
-      "spriteWidth": 16,
-      "spriteHeight": 16,
-      "hitboxWidth": 16,
-      "hitboxHeight": 16,
-      "sprite": "001_key.png",
-      "visible": true,
-      "pickup": true,
-      "collected": false
-    },
-    {
-      "id": "object_2",
-      "name": "Puerta",
-      "description": "Es una puerta robusta.",
-      "x": 167,
-      "y": 29,
-      "spriteWidth": 50,
-      "spriteHeight": 60,
-      "hitboxWidth": 48,
-      "hitboxHeight": 60,
-      "sprite": "002_door_main.png",
-      "visible": true,
-      "pickup": false,
-      "collected": false,
-
-      "locked": true,
-      "opened": false,
-      "requiredItem":"key",
-
-      "openSprite": "002_door_main_open.png",
-      "teleportTo": "map2",
-      "teleportX": 5,
-      "teleportY": 8,
-      "teleportDirection": "down"
-
-    }
-   
-  ]
+  "objects": []
 }

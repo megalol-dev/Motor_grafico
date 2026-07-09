@@ -96,6 +96,8 @@ window.GameModule = (() => {
 
       animTimer: 0,
       animFrame: 0,
+
+      currentMap: "map1",
     },
 
     // -------------------------------------------------------
@@ -119,6 +121,8 @@ window.GameModule = (() => {
 
         animTimer: 0,
         animFrame: 0,
+
+        currentMap: "map1",
       },
 
       {
@@ -138,6 +142,8 @@ window.GameModule = (() => {
 
         animTimer: 0,
         animFrame: 0,
+
+        currentMap: "map1",
       },
     ],
 
@@ -154,6 +160,7 @@ window.GameModule = (() => {
     // INTERACCIÓN PENDIENTE
     // -------------------------------------------------------
     pendingInteraction: null,
+    pendingTeleport: null,
 
     // -------------------------------------------------------
     // INVENTARIO POR PERSONAJE
@@ -163,6 +170,12 @@ window.GameModule = (() => {
       slot2: [],
       slot3: [],
     },
+
+    // -----------------------------------------
+    // OBJETO SELECCIONADO DEL INVENTARIO
+    // -----------------------------------------
+
+    selectedInventoryItem: null,
 
     activeCharacter: "slot1",
   };
@@ -256,9 +269,9 @@ window.GameModule = (() => {
   // -------------------------------------------------------
   // CARGA EL JSON DEL MAPA
   // -------------------------------------------------------
-  async function loadMapData() {
+  async function loadMapData(mapName = "map1") {
     try {
-      const response = await fetch("./data/maps/map1.json");
+      const response = await fetch(`./data/maps/${mapName}.json`);
       mapData = await response.json();
 
       if (!mapData.tileWidth) mapData.tileWidth = 24;
@@ -280,9 +293,66 @@ window.GameModule = (() => {
         };
       }
     } catch (error) {
-      console.error("Error cargando map1.json:", error);
+      console.error(`Error cargando ${mapName}.json:`, error);
       mapData = null;
     }
+  }
+
+  // -------------------------------------------------------
+  // OBTENER ESTADO DE UN MAPA
+  // -------------------------------------------------------
+  function getMapState(mapName) {
+    if (!GameState.maps[mapName]) {
+      GameState.maps[mapName] = {
+        objects: {},
+      };
+    }
+
+    return GameState.maps[mapName];
+  }
+
+  // -------------------------------------------------------
+  // OBTENER ESTADO DE UN OBJETO
+  // -------------------------------------------------------
+  function getObjectState(mapName, objectId) {
+    const mapState = getMapState(mapName);
+
+    if (!mapState.objects[objectId]) {
+      mapState.objects[objectId] = {};
+    }
+
+    return mapState.objects[objectId];
+  }
+
+  // -------------------------------------------------------
+  // APLICAR ESTADOS PERSISTENTES A LOS OBJETOS DEL MAPA
+  // -------------------------------------------------------
+  function applyPersistentObjectStates(mapName) {
+    if (!mapData?.objects) return;
+
+    mapData.objects.forEach((obj) => {
+      const saved = getObjectState(mapName, obj.id);
+
+      if (saved.collected !== undefined) {
+        obj.collected = saved.collected;
+      }
+
+      if (saved.visible !== undefined) {
+        obj.visible = saved.visible;
+      }
+
+      if (saved.locked !== undefined) {
+        obj.locked = saved.locked;
+      }
+
+      if (saved.opened !== undefined) {
+        obj.opened = saved.opened;
+      }
+
+      if (saved.sprite !== undefined) {
+        obj.sprite = saved.sprite;
+      }
+    });
   }
 
   // -------------------------------------------------------
@@ -309,6 +379,40 @@ window.GameModule = (() => {
 
       mapImage.src = `./img/maps/${mapData.image}`;
     });
+  }
+
+  // -------------------------------------------------------
+  // CAMBIA DE MAPA
+  // -------------------------------------------------------
+  async function changeMap(mapName, spawnX, spawnY, direction = "down") {
+    // Cargar nuevo mapa
+    await loadMapData(mapName);
+
+    await loadMapImage();
+
+    objectSprites = {};
+
+    await loadObjectSprites();
+    applyPersistentObjectStates(mapName);
+
+    // -------------------------------------------------------
+    // Colocar jugador --- mover solo al personaje activo
+    // -------------------------------------------------------
+
+    const player = getActiveCharacter();
+    player.currentMap = mapName;
+
+    player.x = spawnX * mapData.tileWidth + mapData.tileWidth / 2;
+    player.y = (spawnY + 1) * mapData.tileHeight;
+    player.direction = direction;
+
+    // Cancelar movimiento
+    state.target.active = false;
+
+    // Recolocar cámara
+    centerCameraOnPlayer();
+
+    render();
   }
 
   // -------------------------------------------------------
@@ -341,6 +445,21 @@ window.GameModule = (() => {
     });
 
     await Promise.all(promises);
+  }
+
+  // -------------------------------------------------------
+  // CARGA UN SPRITE INDIVIDUAL
+  // -------------------------------------------------------
+  function loadObjectSprite(spriteName) {
+    if (objectSprites[spriteName]) {
+      return;
+    }
+
+    const img = new Image();
+
+    img.src = `./img/objects/${spriteName}`;
+
+    objectSprites[spriteName] = img;
   }
 
   // -------------------------------------------------------
@@ -448,7 +567,9 @@ window.GameModule = (() => {
       const clickedObject = getObjectAt(worldPoint.x, worldPoint.y);
 
       if (clickedObject) {
+        console.log("CLICK SOBRE OBJETO:", clickedObject.name);
         const verb = state.currentVerb.toLowerCase();
+        console.log("VERBO ACTUAL:", verb);
 
         // ---------------------------------------------------
         // WHAT IS -> NO CAMINAR
@@ -481,6 +602,103 @@ window.GameModule = (() => {
             (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
 
           state.target.active = true;
+          state.pendingInteraction = clickedObject;
+
+          const dx = state.target.x - state.player.x;
+          const dy = state.target.y - state.player.y;
+
+          updateDirectionFromVector(dx, dy);
+
+          return;
+        }
+
+        // ---------------------------------------------------
+        // USE -> CAMINAR HASTA EL OBJETO
+        // ---------------------------------------------------
+        if (verb === "use") {
+          const interactionTile = findInteractionTileForObject(clickedObject);
+
+          if (!interactionTile) {
+            showTemporaryMessage(
+              `No puedo llegar a ${clickedObject.name}`,
+              2000,
+            );
+            return;
+          }
+
+          state.target.x =
+            interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+
+          state.target.y =
+            (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+
+          state.target.active = true;
+          state.pendingInteraction = clickedObject;
+
+          const dx = state.target.x - state.player.x;
+          const dy = state.target.y - state.player.y;
+
+          updateDirectionFromVector(dx, dy);
+
+          return;
+        }
+
+        // ---------------------------------------------------
+        // WALK TO -> CAMINAR HASTA EL OBJETO
+        // ---------------------------------------------------
+        if (verb === "walk to") {
+          const interactionTile = findInteractionTileForObject(clickedObject);
+
+          if (!interactionTile) {
+            showTemporaryMessage(
+              `No puedo llegar a ${clickedObject.name}`,
+              2000,
+            );
+            return;
+          }
+
+          state.target.x =
+            interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+
+          state.target.y =
+            (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+
+          state.target.active = true;
+
+          // Cuando llegue al objeto se ejecutará handleObjectInteraction()
+          state.pendingInteraction = clickedObject;
+
+          const dx = state.target.x - state.player.x;
+          const dy = state.target.y - state.player.y;
+
+          updateDirectionFromVector(dx, dy);
+
+          return;
+        }
+
+        // ---------------------------------------------------
+        // OPEN -> CAMINAR HASTA EL OBJETO
+        // ---------------------------------------------------
+        if (verb === "open") {
+          const interactionTile = findInteractionTileForObject(clickedObject);
+
+          if (!interactionTile) {
+            showTemporaryMessage(
+              `No puedo llegar a ${clickedObject.name}`,
+              2000,
+            );
+
+            return;
+          }
+
+          state.target.x =
+            interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+
+          state.target.y =
+            (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+
+          state.target.active = true;
+
           state.pendingInteraction = clickedObject;
 
           const dx = state.target.x - state.player.x;
@@ -534,10 +752,17 @@ window.GameModule = (() => {
 
       updateDirectionFromVector(dx, dy);
 
-      state.currentVerb = "Walk to";
+      // Si estamos usando un objeto del inventario,
+      // no cancelar el modo USE.
+      if (
+        state.currentVerb.toLowerCase() !== "use" ||
+        !state.selectedInventoryItem
+      ) {
+        state.currentVerb = "Walk to";
 
-      if (actionLine) {
-        actionLine.textContent = `${state.currentVerb} ...`;
+        if (actionLine) {
+          actionLine.textContent = `${state.currentVerb} ...`;
+        }
       }
     });
 
@@ -560,7 +785,14 @@ window.GameModule = (() => {
       // ---------------------------------------------------
       if (hoveredObject) {
         if (actionLine) {
-          actionLine.textContent = `${state.currentVerb} ${hoveredObject.name}`;
+          if (
+            state.currentVerb.toLowerCase() === "use" &&
+            state.selectedInventoryItem
+          ) {
+            actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hoveredObject.name}`;
+          } else {
+            actionLine.textContent = `${state.currentVerb} ${hoveredObject.name}`;
+          }
         }
 
         return;
@@ -570,7 +802,14 @@ window.GameModule = (() => {
       // SI NO HAY OBJETO
       // ---------------------------------------------------
       if (actionLine) {
-        actionLine.textContent = `${state.currentVerb} ...`;
+        if (
+          state.currentVerb.toLowerCase() === "use" &&
+          state.selectedInventoryItem
+        ) {
+          actionLine.textContent = `Use ${state.selectedInventoryItem.name} with...`;
+        } else {
+          actionLine.textContent = `${state.currentVerb} ...`;
+        }
       }
     });
 
@@ -579,7 +818,12 @@ window.GameModule = (() => {
     // ---------------------------------------------------
     verbButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        state.currentVerb = button.textContent;
+        state.currentVerb = button.textContent.trim();
+
+        if (state.currentVerb.toLowerCase() !== "use") {
+          state.selectedInventoryItem = null;
+          refreshInventoryUI();
+        }
 
         if (actionLine) {
           actionLine.textContent = `${state.currentVerb} ...`;
@@ -613,6 +857,14 @@ window.GameModule = (() => {
         });
 
         state.activeCharacter = selected;
+        const player = getActiveCharacter();
+
+        changeMap(
+          player.currentMap,
+          Math.floor(player.x / mapData.tileWidth),
+          Math.floor(player.y / mapData.tileHeight) - 1,
+          player.direction,
+        );
         state.target.active = false;
 
         console.log("Personaje activo:", state.activeCharacter);
@@ -705,6 +957,8 @@ window.GameModule = (() => {
     const objectCol = Math.floor(objectCenterX / tileW);
     const objectRow = Math.floor(objectBottomY / tileH);
 
+    console.log(obj.name, objectCol, objectRow);
+
     // Prioridad: debajo, izquierda, derecha, arriba
     const candidates = [
       { col: objectCol, row: objectRow + 1 },
@@ -717,6 +971,7 @@ window.GameModule = (() => {
 
     for (const tile of candidates) {
       if (isWalkableTile(tile.col, tile.row)) {
+        console.log("Interactuar desde:", tile);
         return tile;
       }
     }
@@ -829,6 +1084,20 @@ window.GameModule = (() => {
         handleObjectInteraction(state.pendingInteraction);
 
         state.pendingInteraction = null;
+      }
+
+      // ---------------------------------------------------
+      // TELETRANSPORTE PENDIENTE
+      // ---------------------------------------------------
+      if (state.pendingTeleport) {
+        changeMap(
+          state.pendingTeleport.teleportTo,
+          state.pendingTeleport.teleportX,
+          state.pendingTeleport.teleportY,
+          state.pendingTeleport.teleportDirection ?? "down",
+        );
+
+        state.pendingTeleport = null;
       }
 
       return;
@@ -997,17 +1266,19 @@ window.GameModule = (() => {
   // CENTRA LA CÁMARA EN EL JUGADOR AL INICIO
   // -------------------------------------------------------
   function centerCameraOnPlayer() {
+    const player = getActiveCharacter();
+
     const viewportWidth = canvas.width / MAP_SCALE;
     const viewportHeight = canvas.height / MAP_SCALE;
 
     state.camera.x = clamp(
-      state.player.x - viewportWidth / 2,
+      player.x - viewportWidth / 2,
       0,
       Math.max(0, getWorldWidth() - viewportWidth),
     );
 
     state.camera.y = clamp(
-      state.player.y - viewportHeight / 2,
+      player.y - viewportHeight / 2,
       0,
       Math.max(0, getWorldHeight() - viewportHeight),
     );
@@ -1120,7 +1391,12 @@ window.GameModule = (() => {
   // DIBUJA LOS PERSONAJES SECUNDARIOS
   // -------------------------------------------------------
   function drawCompanions() {
+    const activePlayer = getActiveCharacter();
+
     state.companions.forEach((companion) => {
+      if (companion.currentMap !== activePlayer.currentMap) {
+        return;
+      }
       // -------------------------------------------------------
       // NO DIBUJAR EL PERSONAJE ACTIVO
       // -------------------------------------------------------
@@ -1169,6 +1445,10 @@ window.GameModule = (() => {
     // -------------------------------------------------------
     if (state.activeCharacter !== "slot1") {
       const p1 = state.player;
+
+      if (p1.currentMap !== activePlayer.currentMap) {
+        return;
+      }
 
       const sprite = playerSprites[p1.sprite];
 
@@ -1387,14 +1667,15 @@ window.GameModule = (() => {
   // INTERACCIÓN CON OBJETOS / VERBOS
   // -------------------------------------------------------
   function handleObjectInteraction(obj) {
+    const player = getActiveCharacter();
     const verb = state.currentVerb.toLowerCase();
+    
 
     // ---------------------------------------------------
     // WHAT IS
     // ---------------------------------------------------
     if (verb === "what is") {
       showTemporaryMessage(obj.description, 2000);
-
       return;
     }
 
@@ -1402,20 +1683,42 @@ window.GameModule = (() => {
     // PICK UP
     // ---------------------------------------------------
     if (verb === "pick up") {
+      // El objeto no puede recogerse
       if (!obj.pickup) {
         if (actionLine) {
-          actionLine.textContent = `No puedo coger ${obj.name}`;
+          actionLine.textContent = `No puedo coger ${obj.name}.`;
         }
 
         return;
       }
 
+      // Ya estaba recogido
+      if (obj.collected) {
+        if (actionLine) {
+          actionLine.textContent = `${obj.name} ya no está aquí.`;
+        }
+
+        return;
+      }
+
+      // Recoger objeto
       obj.collected = true;
       obj.visible = false;
+      // ---------------------------------------------------
+      // GUARDAR ESTADO PERSISTENTE DEL OBJETO
+      // ---------------------------------------------------
+      const objectState = getObjectState(player.currentMap, obj.id);
 
-      // inventario PJ1
+      objectState.collected = true;
+      objectState.visible = false;
+
+      const libraryItem = window.ObjectLibrary.find(
+        (item) => item.sprite === obj.sprite,
+      );
+
       state.inventory[state.activeCharacter].push({
         id: obj.id,
+        typeId: libraryItem?.id ?? obj.id,
         name: obj.name,
         sprite: obj.sprite,
         description: obj.description,
@@ -1423,10 +1726,118 @@ window.GameModule = (() => {
 
       refreshInventoryUI();
 
-      console.log("Inventario P1:", state.inventory.p1);
+      if (actionLine) {
+        actionLine.textContent = `Has cogido ${obj.name}.`;
+      }
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // USE
+    // ---------------------------------------------------
+    if (verb === "use") {
+      // ¿Se ha seleccionado un objeto del inventario?
+      if (!state.selectedInventoryItem) {
+        if (actionLine) {
+          actionLine.textContent = "¿Usar qué?";
+        }
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // ¿Este objeto necesita una llave?
+      // -------------------------------------------------
+      if (
+        obj.requiredItem &&
+        state.selectedInventoryItem.typeId === obj.requiredItem
+      ) {
+        obj.locked = false;
+        obj.opened = true;
+
+        // Guarlado de forma persistente 
+        const objectState = getObjectState(player.currentMap, obj.id);
+
+        objectState.locked = false;
+        objectState.opened = true;
+
+        // Cambiar sprite de la puerta
+        if (obj.openSprite) {
+          obj.sprite = obj.openSprite;
+          loadObjectSprite(obj.sprite);
+          
+          // Guarlo de forma persistente
+          objectState.sprite = obj.sprite;
+        } else {
+          obj.visible = false;
+        }
+
+        // Deseleccionar objeto del inventario
+        state.selectedInventoryItem = null;
+
+        refreshInventoryUI();
+
+        // Volver al modo normal
+        state.currentVerb = "Walk to";
+
+        if (actionLine) {
+          actionLine.textContent = "Walk to ...";
+        }
+
+        if (actionLine) {
+          actionLine.textContent = `${obj.name} se ha abierto.`;
+        }
+
+        render();
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // Objeto incorrecto
+      // -------------------------------------------------
+      if (actionLine) {
+        actionLine.textContent = `No puedo usar ${state.selectedInventoryItem.name} con ${obj.name}.`;
+      }
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // OPEN
+    // ---------------------------------------------------
+
+    // ---------------------------------------
+    // PUERTA ABIERTA -> TELETRANSPORTE
+    // ---------------------------------------
+
+    if (obj.opened && obj.teleportTo) {
+      const interactionTile = findInteractionTileForObject(obj);
+
+      state.target.x =
+        interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+
+      state.target.y =
+        (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+
+      state.target.active = true;
+
+      state.pendingTeleport = obj;
+
+      return;
+    }
+    if (verb === "open") {
+      if (obj.locked) {
+        if (actionLine) {
+          actionLine.textContent = `${obj.name} está cerrada con llave.`;
+        }
+
+        return;
+      }
 
       if (actionLine) {
-        actionLine.textContent = `Has cogido ${obj.name}`;
+        actionLine.textContent = `Abres ${obj.name}.`;
       }
 
       return;
@@ -1468,21 +1879,55 @@ window.GameModule = (() => {
   function refreshInventoryUI() {
     const slots = document.querySelectorAll(".inventory-slot");
 
-    // limpiar slots
+    // ---------------------------------------------------
+    // LIMPIAR SLOTS
+    // ---------------------------------------------------
     slots.forEach((slot) => {
       slot.innerHTML = "";
     });
 
-    // dibujar objetos del personaje 1
+    // ---------------------------------------------------
+    // INVENTARIO DEL PERSONAJE ACTIVO
+    // ---------------------------------------------------
     const inventory = state.inventory[state.activeCharacter];
 
     inventory.forEach((obj, index) => {
-      if (!slots[index]) return;
-
       const img = document.createElement("img");
 
       img.src = `./img/objects/${obj.sprite}`;
+
       img.classList.add("inventory-item");
+
+      // ---------------------------------------------------
+      // RESALTAR OBJETO SELECCIONADO
+      // ---------------------------------------------------
+      if (state.selectedInventoryItem === obj) {
+        img.style.outline = "3px solid yellow";
+      }
+
+      // ---------------------------------------------------
+      // CLICK SOBRE OBJETO DEL INVENTARIO
+      // ---------------------------------------------------
+      img.addEventListener("click", (event) => {
+        console.log("VERBO:", state.currentVerb);
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Solo funciona con el verbo USE
+        if (state.currentVerb.toLowerCase() !== "use") {
+          return;
+        }
+
+        state.selectedInventoryItem = obj;
+
+        // Redibujar inventario para mostrar el borde amarillo
+        refreshInventoryUI();
+
+        if (actionLine) {
+          actionLine.textContent = `Use ${obj.name} with...`;
+        }
+      });
 
       slots[index].appendChild(img);
     });

@@ -158,5 +158,4 @@
     height: 100%;
     object-fit: contain;
     image-rendering: pixelated;
-    pointer-events: none;
 }

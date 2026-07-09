@@ -60,7 +60,6 @@ window.ObjectLibrary = [
   // ---------------------------------------------
   {
     id: "key",
-
     name: "Llave",
 
     sprite: "001_key.png",
@@ -70,6 +69,8 @@ window.ObjectLibrary = [
 
     defaultHitboxWidth: 16,
     defaultHitboxHeight: 16,
+
+    pickup: true,
   },
 
   // ---------------------------------------------
@@ -82,11 +83,15 @@ window.ObjectLibrary = [
 
     sprite: "002_door_main.png",
 
+    openSprite: "002_door_main_open.png",
+
     defaultSpriteWidth: 50,
     defaultSpriteHeight: 60,
 
     defaultHitboxWidth: 48,
     defaultHitboxHeight: 60,
+
+    pickup: false
   },
 
   // ---------------------------------------------
