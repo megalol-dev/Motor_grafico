@@ -1,0 +1,19 @@
+CATÁLOGOS DEL MOTOR
+
+Todos los recursos del juego se registran aquí.
+Siempre que se cree un objeto de la siguiente lista debe crearse aqui para ser usado con el motor
+
+Actualmente:
+
+- maps.js
+- objects.js
+
+En el futuro:
+
+- npcs.js
+- enemies.js
+- items.js
+- sounds.js
+- music.js
+- animations.js
+- quests.js

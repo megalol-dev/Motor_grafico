@@ -23,6 +23,7 @@ window.GameModule = (() => {
     p3: false,
   };
 
+  let currentMapImage = "";
   let mapImage = null;
   let mapImageLoaded = false;
   let mapData = null;
@@ -1347,39 +1348,15 @@ window.GameModule = (() => {
       // TAMAÑO VISUAL DEL SPRITE
       // ---------------------------------------------------
       const drawWidth = (obj.spriteWidth ?? obj.hitboxWidth) * MAP_SCALE;
-
       const drawHeight = (obj.spriteHeight ?? obj.hitboxHeight) * MAP_SCALE;
 
       // ---------------------------------------------------
       // DIBUJAR SPRITE
       // ---------------------------------------------------
       ctx.drawImage(sprite, screenX, screenY, drawWidth, drawHeight);
-
-      // ---------------------------------------------------
-      // DEBUG - ÁREA INTERACTIVA
-      // ---------------------------------------------------
-      if (DEBUG.showObjectBounds) {
-        ctx.save();
-
-        ctx.strokeStyle = "#00ff00";
-        ctx.lineWidth = 2;
-
-        ctx.strokeRect(
-          screenX,
-          screenY,
-          obj.hitboxWidth * MAP_SCALE,
-          obj.hitboxHeight * MAP_SCALE,
-        );
-
-        ctx.fillStyle = "#00ff00";
-        ctx.font = "12px Courier New";
-
-        ctx.fillText(obj.id, screenX, screenY - 6);
-
-        ctx.restore();
-      }
     });
   }
+
   // -------------------------------------------------------
   // DEVUELVE EL OBJETO SOBRE EL QUE SE HA HECHO CLICK
   // -------------------------------------------------------

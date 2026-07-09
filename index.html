@@ -160,7 +160,7 @@
           <div class="editor-toolbar">
             <input type="file" id="map-upload" accept="image/png" />
 
-            <button id="load-project-img">Editar</button>
+            <button id="edit-map-btn">Editar</button>
 
             <button id="save-map-btn">Guardar JSON</button>
           </div>
@@ -230,8 +230,6 @@
               </div>
             </div>
 
-            
-
             <!-- =============================================== -->
             <!-- PANEL DERECHO -->
             <!-- =============================================== -->
@@ -252,6 +250,25 @@
               </div>
             </aside>
           </div>
+
+          <!-- ========================================== -->
+          <!-- POPUP GENERAL DEL EDITOR -->
+          <!-- ========================================== -->
+
+          <div id="editor-popup" class="editor-popup hidden">
+            <div class="editor-popup-window">
+              <h2 id="editor-popup-title">Abrir mapa</h2>
+
+              <div id="editor-popup-content">
+                <!--
+                Aquí se generará el contenido
+                dinámicamente desde editor.js
+            -->
+              </div>
+
+              <button id="editor-popup-close">Cancelar</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -260,7 +277,10 @@
     <!-- SCRIPTS -->
     <!-- ===================================================== -->
     <script src="js/config.js"></script>
-    <script src="js/objects.js"></script>
+
+    <script src="js/catalogs/objects.js"></script>
+    <script src="js/catalogs/maps.js"></script>
+    
     <script src="js/editor.js"></script>
     <script src="js/game.js"></script>
     <script src="js/app.js"></script>

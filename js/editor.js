@@ -55,9 +55,10 @@ window.EditorModule = (() => {
 
   function bindEvents() {
     const uploadInput = document.getElementById("map-upload");
+    const editMapBtn = document.getElementById("edit-map-btn");
     const saveBtn = document.getElementById("save-map-btn");
-    const toggleGridBtn = document.getElementById("toggle-grid-btn");
 
+    const toggleGridBtn = document.getElementById("toggle-grid-btn");
     const paintBtn = document.getElementById("paint-collision-btn");
     const eraseBtn = document.getElementById("erase-mode-btn");
 
@@ -79,6 +80,32 @@ window.EditorModule = (() => {
     if (saveBtn && !saveBtn.dataset.bound) {
       saveBtn.addEventListener("click", saveMap);
       saveBtn.dataset.bound = "true";
+    }
+
+    // --------------------------------------
+    // EDITAR MAPA
+    // --------------------------------------
+
+    if (editMapBtn && !editMapBtn.dataset.bound) {
+      editMapBtn.addEventListener("click", () => {
+        openEditorPopup("Abrir mapa");
+      });
+
+      editMapBtn.dataset.bound = "true";
+    }
+
+    // --------------------------------------
+    // CERRAR POPUP
+    // --------------------------------------
+
+    const popupCloseBtn = document.getElementById("editor-popup-close");
+
+    if (popupCloseBtn && !popupCloseBtn.dataset.bound) {
+      popupCloseBtn.addEventListener("click", () => {
+        closeEditorPopup();
+      });
+
+      popupCloseBtn.dataset.bound = "true";
     }
 
     // ----------------------------------------------------
@@ -260,6 +287,7 @@ window.EditorModule = (() => {
 
   function loadImage(e) {
     const file = e.target.files[0];
+    currentMapImage = file.name;
     if (!file) return;
 
     const img = new Image();
@@ -396,9 +424,9 @@ window.EditorModule = (() => {
 
     loadEditorObjectSprite(obj.sprite);
 
-   updateInspector();
-   updateToolButtons();
-   draw();
+    updateInspector();
+    updateToolButtons();
+    draw();
   }
 
   function draw() {
@@ -731,26 +759,168 @@ window.EditorModule = (() => {
   }
 
   // -------------------------------------------------------
-  // GUARDAR MAPA
+  // GUARDAR MAPA en json con todos sus objetos
   // -------------------------------------------------------
   function saveMap() {
     const data = {
+      image: currentMapImage,
+
       tileWidth: TILE_W,
       tileHeight: TILE_H,
-      cols,
-      rows,
-      objects: editorObjects,
+
+      cols: cols,
+      rows: rows,
+
       walkable: grid,
+
+      objects: editorObjects,
     };
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob(
+      [JSON.stringify(data, null, 2)],
+
+      {
+        type: "application/json",
+      },
+    );
 
     const a = document.createElement("a");
+
     a.href = URL.createObjectURL(blob);
-    a.download = "map.json";
+    a.download = currentMapImage.replace(".png", ".json");
     a.click();
+  }
+
+  // =======================================================
+  // ABRIR POPUP
+  // =======================================================
+
+  function openEditorPopup(title = "Ventana") {
+    const popup = document.getElementById("editor-popup");
+
+    const popupTitle = document.getElementById("editor-popup-title");
+
+    const popupContent = document.getElementById("editor-popup-content");
+
+    popupTitle.textContent = title;
+
+    popupContent.innerHTML = "";
+
+    //----------------------------------------------------
+
+    const list = document.createElement("div");
+
+    list.className = "editor-map-list";
+
+    window.MapLibrary.forEach((map) => {
+      const card = document.createElement("div");
+
+      card.className = "editor-map-card";
+
+      card.innerHTML = `
+
+    <img src="img/maps/${map.image}">
+
+    <div class="editor-map-info">
+
+        <h3>${map.name}</h3>
+
+        <p>${map.image}</p>
+
+    </div>
+
+`;
+      const loadButton = document.createElement("button");
+
+      loadButton.textContent = "Cargar";
+
+      loadButton.addEventListener("click", () => {
+        loadEditorMap(map);
+      });
+
+      card.appendChild(loadButton);
+      list.appendChild(card);
+    });
+
+    popupContent.appendChild(list);
+
+    //----------------------------------------------------
+
+    popup.classList.remove("hidden");
+  }
+
+  // =======================================================
+  // CERRAR POPUP
+  // =======================================================
+
+  function closeEditorPopup() {
+    document.getElementById("editor-popup").classList.add("hidden");
+  }
+
+  // =======================================================
+  // CARGAR MAPA DEL EDITOR
+  // =======================================================
+
+  async function loadEditorMap(map) {
+    currentMapImage = map.image;
+
+    //--------------------------------------------------
+    // Cargar imagen
+    //--------------------------------------------------
+
+    image = new Image();
+
+    image.src = "img/maps/" + map.image;
+
+    await new Promise((resolve) => {
+      image.onload = resolve;
+    });
+
+    //--------------------------------------------------
+    // Configurar canvas
+    //--------------------------------------------------
+
+    canvas.width = image.width;
+    canvas.height = image.height;
+
+    canvas.style.width = `${image.width * DISPLAY_SCALE}px`;
+    canvas.style.height = `${image.height * DISPLAY_SCALE}px`;
+
+    //--------------------------------------------------
+    // Cargar JSON
+    //--------------------------------------------------
+
+    const response = await fetch("data/maps/" + map.json);
+
+    const data = await response.json();
+
+    //--------------------------------------------------
+    // Sustituir datos
+    //--------------------------------------------------
+
+    cols = data.cols;
+
+    rows = data.rows;
+
+    grid = data.walkable;
+
+    editorObjects = data.objects;
+
+    selectedObject = null;
+
+    //--------------------------------------------------
+    // Cargar sprites de los objetos
+    //--------------------------------------------------
+
+    editorObjects.forEach((obj) => {
+      loadEditorObjectSprite(obj.sprite);
+    });
+
+    updateInspector();
+
+    draw();
+
+    closeEditorPopup();
   }
 
   return { start };
