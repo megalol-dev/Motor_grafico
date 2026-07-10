@@ -27,6 +27,7 @@ window.GameModule = (() => {
   let mapImage = null;
   let mapImageLoaded = false;
   let mapData = null;
+  let currentMapName = "map1";
 
   // -------------------------------------------------------
   // SPRITES DE OBJETOS DEL MAPA
@@ -205,7 +206,12 @@ window.GameModule = (() => {
     await Promise.all([loadPlayerSprite(), loadMapData()]);
 
     if (mapData) {
+      applyPersistentObjectStates(currentMapName);
+
       await loadMapImage();
+
+      objectSprites = {};
+
       await loadObjectSprites();
 
       placePlayerAtSpawn();
@@ -273,6 +279,7 @@ window.GameModule = (() => {
     try {
       const response = await fetch(`./data/maps/${mapName}.json`);
       mapData = await response.json();
+      currentMapName = mapName;
 
       if (!mapData.tileWidth) mapData.tileWidth = 24;
       if (!mapData.tileHeight) mapData.tileHeight = 30;
@@ -325,33 +332,42 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // CREA UNA COPIA SERIALIZABLE DE UN VALOR
+  // -------------------------------------------------------
+  function cloneSerializable(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  // -------------------------------------------------------
+  // GUARDA AUTOMÁTICAMENTE EL ESTADO COMPLETO DE UN OBJETO
+  // -------------------------------------------------------
+  function persistObjectState(obj, mapName = currentMapName) {
+    if (!obj?.id) {
+      console.warn("No se puede guardar un objeto sin id.");
+      return;
+    }
+
+    const mapState = getMapState(mapName);
+
+    mapState.objects[obj.id] = cloneSerializable(obj);
+  }
+
+  // -------------------------------------------------------
   // APLICAR ESTADOS PERSISTENTES A LOS OBJETOS DEL MAPA
   // -------------------------------------------------------
   function applyPersistentObjectStates(mapName) {
     if (!mapData?.objects) return;
 
+    const savedObjects = GameState.maps[mapName]?.objects;
+
+    if (!savedObjects) return;
+
     mapData.objects.forEach((obj) => {
-      const saved = getObjectState(mapName, obj.id);
+      const savedObject = savedObjects[obj.id];
 
-      if (saved.collected !== undefined) {
-        obj.collected = saved.collected;
-      }
+      if (!savedObject) return;
 
-      if (saved.visible !== undefined) {
-        obj.visible = saved.visible;
-      }
-
-      if (saved.locked !== undefined) {
-        obj.locked = saved.locked;
-      }
-
-      if (saved.opened !== undefined) {
-        obj.opened = saved.opened;
-      }
-
-      if (saved.sprite !== undefined) {
-        obj.sprite = saved.sprite;
-      }
+      Object.assign(obj, cloneSerializable(savedObject));
     });
   }
 
@@ -385,33 +401,38 @@ window.GameModule = (() => {
   // CAMBIA DE MAPA
   // -------------------------------------------------------
   async function changeMap(mapName, spawnX, spawnY, direction = "down") {
-    // Cargar nuevo mapa
+    // Cargar JSON del nuevo mapa
     await loadMapData(mapName);
 
+    // Aplicar primero los estados persistentes
+    applyPersistentObjectStates(mapName);
+
+    // Cargar imagen del mapa
     await loadMapImage();
 
+    // Vaciar y cargar los sprites del estado correcto
     objectSprites = {};
 
     await loadObjectSprites();
-    applyPersistentObjectStates(mapName);
 
     // -------------------------------------------------------
-    // Colocar jugador --- mover solo al personaje activo
+    // MOVER SOLO AL PERSONAJE ACTIVO
     // -------------------------------------------------------
-
     const player = getActiveCharacter();
+
     player.currentMap = mapName;
 
     player.x = spawnX * mapData.tileWidth + mapData.tileWidth / 2;
     player.y = (spawnY + 1) * mapData.tileHeight;
     player.direction = direction;
+    player.moving = false;
 
-    // Cancelar movimiento
+    // Cancelar acciones anteriores
     state.target.active = false;
+    state.pendingInteraction = null;
+    state.pendingTeleport = null;
 
-    // Recolocar cámara
     centerCameraOnPlayer();
-
     render();
   }
 
@@ -567,10 +588,8 @@ window.GameModule = (() => {
       const clickedObject = getObjectAt(worldPoint.x, worldPoint.y);
 
       if (clickedObject) {
-        console.log("CLICK SOBRE OBJETO:", clickedObject.name);
         const verb = state.currentVerb.toLowerCase();
-        console.log("VERBO ACTUAL:", verb);
-
+      
         // ---------------------------------------------------
         // WHAT IS -> NO CAMINAR
         // ---------------------------------------------------
@@ -867,8 +886,6 @@ window.GameModule = (() => {
         );
         state.target.active = false;
 
-        console.log("Personaje activo:", state.activeCharacter);
-
         refreshInventoryUI();
       });
     });
@@ -957,8 +974,6 @@ window.GameModule = (() => {
     const objectCol = Math.floor(objectCenterX / tileW);
     const objectRow = Math.floor(objectBottomY / tileH);
 
-    console.log(obj.name, objectCol, objectRow);
-
     // Prioridad: debajo, izquierda, derecha, arriba
     const candidates = [
       { col: objectCol, row: objectRow + 1 },
@@ -971,7 +986,6 @@ window.GameModule = (() => {
 
     for (const tile of candidates) {
       if (isWalkableTile(tile.col, tile.row)) {
-        console.log("Interactuar desde:", tile);
         return tile;
       }
     }
@@ -1669,7 +1683,6 @@ window.GameModule = (() => {
   function handleObjectInteraction(obj) {
     const player = getActiveCharacter();
     const verb = state.currentVerb.toLowerCase();
-    
 
     // ---------------------------------------------------
     // WHAT IS
@@ -1704,13 +1717,9 @@ window.GameModule = (() => {
       // Recoger objeto
       obj.collected = true;
       obj.visible = false;
-      // ---------------------------------------------------
-      // GUARDAR ESTADO PERSISTENTE DEL OBJETO
-      // ---------------------------------------------------
-      const objectState = getObjectState(player.currentMap, obj.id);
 
-      objectState.collected = true;
-      objectState.visible = false;
+      // Guardar automáticamente todos sus cambios
+      persistObjectState(obj);
 
       const libraryItem = window.ObjectLibrary.find(
         (item) => item.sprite === obj.sprite,
@@ -1756,22 +1765,15 @@ window.GameModule = (() => {
         obj.locked = false;
         obj.opened = true;
 
-        // Guarlado de forma persistente 
-        const objectState = getObjectState(player.currentMap, obj.id);
-
-        objectState.locked = false;
-        objectState.opened = true;
-
-        // Cambiar sprite de la puerta
         if (obj.openSprite) {
           obj.sprite = obj.openSprite;
           loadObjectSprite(obj.sprite);
-          
-          // Guarlo de forma persistente
-          objectState.sprite = obj.sprite;
         } else {
           obj.visible = false;
         }
+
+        // Guardar automáticamente todos los cambios de la puerta
+        persistObjectState(obj);
 
         // Deseleccionar objeto del inventario
         state.selectedInventoryItem = null;
@@ -1780,10 +1782,6 @@ window.GameModule = (() => {
 
         // Volver al modo normal
         state.currentVerb = "Walk to";
-
-        if (actionLine) {
-          actionLine.textContent = "Walk to ...";
-        }
 
         if (actionLine) {
           actionLine.textContent = `${obj.name} se ha abierto.`;
@@ -1909,7 +1907,6 @@ window.GameModule = (() => {
       // CLICK SOBRE OBJETO DEL INVENTARIO
       // ---------------------------------------------------
       img.addEventListener("click", (event) => {
-        console.log("VERBO:", state.currentVerb);
 
         event.preventDefault();
         event.stopPropagation();
