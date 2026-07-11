@@ -65,7 +65,7 @@
 
 .editor-panel-box h3 {
     margin: 0 0 10px;
-    color: #000;
+    color: #ffffff;
     text-align: center;
     font-size: 18px;
     text-transform: uppercase;
@@ -74,11 +74,11 @@
 .editor-left-panel button,
 .editor-side button {
     padding: 10px 12px;
-    background: #666;
+    background: #ffffff;
     border: none;
-    color: #fff;
+    color: #000000;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 12px;
 }
 
 /* ZONA CENTRAL */

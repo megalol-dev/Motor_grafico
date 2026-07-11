@@ -10,47 +10,29 @@
 // éste copia automáticamente estos valores.
 //
 // -------------------------------------------------------
-// PARÁMETROS
+// PARÁMETROS de los objetos
 // -------------------------------------------------------
+
+// Parametros generales, los tienen todos los objetos
 //
-// id
-//      Identificador interno.
-//      Debe ser único.
-//      Nunca debe repetirse.
-//
-// name
-//      Nombre que verá el diseñador en el editor.
-//
-// sprite
-//      Imagen situada dentro de:
-//
-//          img/objects/
-//
-//      Se recomienda utilizar:
-//
-//          001_key.png
-//          002_door_main.png
-//          003_flowerpot.png
-//
-//      Así el catálogo queda siempre ordenado.
-//
-// defaultSpriteWidth
-// defaultSpriteHeight
-//
-//      Tamaño con el que se dibuja el sprite.
-//
-//      No tiene por qué coincidir con el tamaño real
-//      del PNG. Por ejemplo puertas si es comodo que sean del tamaño real del png (regilla),
-//      pero objetos pequeños como una llave se pueden dibujar mas grandes y dibuja en el juego
-//      de manera mas pequeña
-//
-// defaultHitboxWidth
-// defaultHitboxHeight
-//
-//      Zona interactiva del objeto.
-//
-//      Puede ser igual que el sprite
-//      o más pequeña/grande.
+// id:      Indentificador único.
+// name:    Nombre del objeto en el juego
+// sprite:  Imagen que utiliza el objeto en el juego
+
+// defaultSpriteWidth:  Tamaño del spite 1 <puede ser el real del png o no>
+// defaultSpriteHeight: Tamaño del sprite 2 <puede ser el real del png o no>
+
+// pickup:  Incia si el objeto se puede recoger o no <true / false>
+
+// Parametrso de puerta, los tienen las puertas
+// locked:  Indica si esta bloqueando el acceso a un camino <true / false>
+// opened:  Indica si esta abierta la puerta y deja pasar <true / false>
+
+// requiredItem:  Indica que necesitas algo para operar, por ejemplo una llave
+// teleportTo:    Indica el mapa al que quieres viajar, ejemplo -> map2
+// teleportX:     Incida la cordenada X del teleporte <fila>
+// teleportY:     Indica la cordandad Y del teleporte <columna>
+// teleportDirection: Indica la dirección en la que aparece el spite del pj -> "right",
 //
 // =======================================================
 
@@ -82,7 +64,6 @@ window.ObjectLibrary = [
     name: "Puerta principal",
 
     sprite: "002_door_main.png",
-
     openSprite: "002_door_main_open.png",
 
     defaultSpriteWidth: 50,
@@ -91,7 +72,44 @@ window.ObjectLibrary = [
     defaultHitboxWidth: 48,
     defaultHitboxHeight: 60,
 
-    pickup: false
+    pickup: false,
+
+    locked: true,
+    opened: false,
+
+    requiredItem: "key",
+
+    teleportTo: "map2",
+    teleportX: 5,
+    teleportY: 4,
+    teleportDirection: "right",
+  },
+
+  // ---------------------------------------------
+  // PUERTA PRINCIPAL - dentro de la casa
+  // ---------------------------------------------
+  {
+    id: "door_1_close",
+
+    name: "Puerta principal - salida",
+
+    sprite: "door_1_open.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+
+    teleportTo: "map1",
+    teleportX: 8,
+    teleportY: 5,
+    teleportDirection: "dawn",
   },
 
   // ---------------------------------------------

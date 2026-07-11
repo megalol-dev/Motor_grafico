@@ -162,6 +162,7 @@ window.GameModule = (() => {
     // -------------------------------------------------------
     pendingInteraction: null,
     pendingTeleport: null,
+    pendingHotspot: null,
 
     // -------------------------------------------------------
     // INVENTARIO POR PERSONAJE
@@ -586,10 +587,11 @@ window.GameModule = (() => {
       // COMPROBAR SI SE HA CLICADO UN OBJETO
       // ---------------------------------------------------
       const clickedObject = getObjectAt(worldPoint.x, worldPoint.y);
+      const clickedHotspot = getHotspotAt(worldPoint.x, worldPoint.y);
 
       if (clickedObject) {
         const verb = state.currentVerb.toLowerCase();
-      
+
         // ---------------------------------------------------
         // WHAT IS -> NO CAMINAR
         // ---------------------------------------------------
@@ -740,6 +742,37 @@ window.GameModule = (() => {
       }
 
       // ---------------------------------------------------
+      // CLICK SOBRE HOTSPOT
+      // ---------------------------------------------------
+      if (clickedHotspot) {
+        const interactionTile = findInteractionTileForHotspot(clickedHotspot);
+
+        if (!interactionTile) {
+          showTemporaryMessage("No puedo llegar ahí.", 2000);
+
+          return;
+        }
+
+        state.target.x =
+          interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+
+        state.target.y =
+          (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+
+        state.target.active = true;
+
+        state.pendingHotspot = clickedHotspot;
+
+        const player = getActiveCharacter();
+
+        updateDirectionFromVector(
+          state.target.x - player.x,
+          state.target.y - player.y,
+        );
+
+        return;
+      }
+      // ---------------------------------------------------
       // MOVIMIENTO DEL PERSONAJE
       // ---------------------------------------------------
       const clickedCol = Math.floor(worldPoint.x / mapData.tileWidth);
@@ -786,21 +819,28 @@ window.GameModule = (() => {
     });
 
     // ---------------------------------------------------
-    // HOVER SOBRE OBJETOS
+    // HOVER SOBRE ELEMENTOS INTERACTIVOS
     // ---------------------------------------------------
     canvas.addEventListener("mousemove", (event) => {
       const isGameVisible = document
         .getElementById("game-screen")
         ?.classList.contains("active");
-      if (!isGameVisible || !mapData) return;
+
+      if (!isGameVisible || !mapData) {
+        return;
+      }
 
       const worldPoint = getWorldPointFromClick(event);
-      if (!worldPoint) return;
+
+      if (!worldPoint) {
+        return;
+      }
 
       const hoveredObject = getObjectAt(worldPoint.x, worldPoint.y);
+      const hoveredHotspot = getHotspotAt(worldPoint.x, worldPoint.y);
 
       // ---------------------------------------------------
-      // SI HAY OBJETO BAJO EL RATÓN
+      // OBJETO BAJO EL RATÓN
       // ---------------------------------------------------
       if (hoveredObject) {
         if (actionLine) {
@@ -818,7 +858,27 @@ window.GameModule = (() => {
       }
 
       // ---------------------------------------------------
-      // SI NO HAY OBJETO
+      // HOTSPOT BAJO EL RATÓN
+      // ---------------------------------------------------
+      if (hoveredHotspot) {
+        const hotspotItem = getHotspotLibraryItem(hoveredHotspot);
+
+        if (hotspotItem && actionLine) {
+          if (
+            state.currentVerb.toLowerCase() === "use" &&
+            state.selectedInventoryItem
+          ) {
+            actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hotspotItem.name}`;
+          } else {
+            actionLine.textContent = `${state.currentVerb} ${hotspotItem.name}`;
+          }
+        }
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // NO HAY ELEMENTO INTERACTIVO
       // ---------------------------------------------------
       if (actionLine) {
         if (
@@ -995,6 +1055,22 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // BUSCA EL PUNTO MÁS CERCANO PARA INTERACTUAR CON UN HOTSPOT
+  // -------------------------------------------------------
+  function findInteractionTileForHotspot(hotspot) {
+    const tileW = mapData.tileWidth;
+    const tileH = mapData.tileHeight;
+
+    const centerX = hotspot.x + hotspot.width / 2;
+    const bottomY = hotspot.y + hotspot.height;
+
+    const hotspotCol = Math.floor(centerX / tileW);
+    const hotspotRow = Math.floor(bottomY / tileH);
+
+    return findNearestWalkableTile(hotspotCol, hotspotRow, 8);
+  }
+
+  // -------------------------------------------------------
   // GAME LOOP PRINCIPAL
   // -------------------------------------------------------
   function gameLoop(timestamp) {
@@ -1098,6 +1174,15 @@ window.GameModule = (() => {
         handleObjectInteraction(state.pendingInteraction);
 
         state.pendingInteraction = null;
+      }
+
+      // ---------------------------------------------------
+      // HOTSPOT
+      // ---------------------------------------------------
+      if (state.pendingHotspot) {
+        handleHotspotInteraction(state.pendingHotspot);
+
+        state.pendingHotspot = null;
       }
 
       // ---------------------------------------------------
@@ -1678,6 +1763,46 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // DEVUELVE EL HOTSPOT SITUADO EN UNA POSICIÓN DEL MAPA
+  // -------------------------------------------------------
+  function getHotspotAt(worldX, worldY) {
+    if (!mapData?.hotspots) {
+      return null;
+    }
+
+    // Recorremos desde el último para respetar el orden
+    // cuando existan varios hotspots superpuestos.
+    for (let i = mapData.hotspots.length - 1; i >= 0; i -= 1) {
+      const hotspot = mapData.hotspots[i];
+
+      const inside =
+        worldX >= hotspot.x &&
+        worldX <= hotspot.x + hotspot.width &&
+        worldY >= hotspot.y &&
+        worldY <= hotspot.y + hotspot.height;
+
+      if (inside) {
+        return hotspot;
+      }
+    }
+
+    return null;
+  }
+
+  // -------------------------------------------------------
+  // DEVUELVE LOS DATOS DEL CATÁLOGO DE UN HOTSPOT
+  // -------------------------------------------------------
+  function getHotspotLibraryItem(hotspot) {
+    if (!hotspot?.typeId || !window.HotspotLibrary) {
+      return null;
+    }
+
+    return (
+      window.HotspotLibrary.find((item) => item.id === hotspot.typeId) ?? null
+    );
+  }
+
+  // -------------------------------------------------------
   // INTERACCIÓN CON OBJETOS / VERBOS
   // -------------------------------------------------------
   function handleObjectInteraction(obj) {
@@ -1850,6 +1975,37 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // INTERACCIÓN CON HOTSPOTS
+  // -------------------------------------------------------
+  function handleHotspotInteraction(hotspot) {
+    const hotspotItem = getHotspotLibraryItem(hotspot);
+
+    if (!hotspotItem) return;
+
+    const verb = state.currentVerb.toLowerCase();
+
+    // ---------------------------------------------------
+    // WHAT IS
+    // ---------------------------------------------------
+    if (verb === "what is") {
+      showTemporaryMessage(
+        hotspotItem.description,
+
+        2000,
+      );
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // RESTO DE VERBOS
+    // ---------------------------------------------------
+    if (actionLine) {
+      actionLine.textContent = `${state.currentVerb} ${hotspotItem.name}`;
+    }
+  }
+
+  // -------------------------------------------------------
   // MUESTRA UN MENSAJE TEMPORAL EN LA ACTION LINE
   // -------------------------------------------------------
   function showTemporaryMessage(text, duration = 2000) {
@@ -1907,7 +2063,6 @@ window.GameModule = (() => {
       // CLICK SOBRE OBJETO DEL INVENTARIO
       // ---------------------------------------------------
       img.addEventListener("click", (event) => {
-
         event.preventDefault();
         event.stopPropagation();
 

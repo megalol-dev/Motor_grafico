@@ -21,6 +21,8 @@ window.EditorModule = (() => {
   // paint
   // erase
   // object
+  // hotspot-create
+  // hotspot-edit
   // npc
   // teleport
 
@@ -31,10 +33,25 @@ window.EditorModule = (() => {
   let objectSprites = {};
 
   // -------------------------------------------------------
+  // HOTSPOTS DEL EDITOR
+  // -------------------------------------------------------
+  let editorHotspots = [];
+
+  let drawingHotspot = false;
+  let hotspotStart = null;
+  let hotspotPreview = null;
+  let selectedHotspot = null;
+
+  // -------------------------------------------------------
   // SELECCIÓN DE OBJETOS
   // -------------------------------------------------------
   let selectedObject = null;
   let draggingObject = false;
+
+  let draggingHotspot = false;
+
+  let hotspotOffsetX = 0;
+  let hotspotOffsetY = 0;
 
   let dragOffsetX = 0;
   let dragOffsetY = 0;
@@ -65,6 +82,10 @@ window.EditorModule = (() => {
     const editObjectBtn = document.getElementById("edit-object-btn");
     const addObjectBtn = document.getElementById("add-object-btn");
     const deleteObjectBtn = document.getElementById("delete-object-btn");
+
+    const editHotspotBtn = document.getElementById("btn-edit-hotspots");
+    const addHotspotBtn = document.getElementById("btn-add-hotspot");
+    const deleteHotspotBtn = document.getElementById("btn-delete-hotspot");
 
     // ----------------------------------------------------
     // CARGAR MAPA
@@ -163,7 +184,7 @@ window.EditorModule = (() => {
     if (editObjectBtn && !editObjectBtn.dataset.bound) {
       editObjectBtn.addEventListener("click", () => {
         currentTool = "object";
-
+        selectedHotspot = null;
         updateToolButtons();
         updateInspector();
         draw();
@@ -177,10 +198,9 @@ window.EditorModule = (() => {
     // ----------------------------------------------------
     if (addObjectBtn && !addObjectBtn.dataset.bound) {
       addObjectBtn.addEventListener("click", () => {
-        currentTool = "object";
-
+        currentTool = "object-create";
+        selectedHotspot = null;
         updateToolButtons();
-
         addDefaultObject();
       });
 
@@ -192,19 +212,10 @@ window.EditorModule = (() => {
     // ----------------------------------------------------
     if (deleteObjectBtn && !deleteObjectBtn.dataset.bound) {
       deleteObjectBtn.addEventListener("click", () => {
-        if (!selectedObject) {
-          return;
-        }
-
-        const confirmar = confirm(`¿Eliminar "${selectedObject.name}"?`);
-
-        if (!confirmar) {
-          return;
-        }
-
-        editorObjects = editorObjects.filter((obj) => obj !== selectedObject);
+        currentTool = "object-delete";
 
         selectedObject = null;
+        selectedHotspot = null;
 
         updateInspector();
         updateToolButtons();
@@ -215,34 +226,221 @@ window.EditorModule = (() => {
     }
 
     // ----------------------------------------------------
+    // AÑADIR HOTSPOT
+    // ----------------------------------------------------
+    if (addHotspotBtn && !addHotspotBtn.dataset.bound) {
+      addHotspotBtn.addEventListener("click", () => {
+        currentTool = "hotspot-create";
+
+        selectedObject = null;
+        selectedHotspot = null;
+
+        updateInspector();
+        updateToolButtons();
+        draw();
+      });
+
+      addHotspotBtn.dataset.bound = "true";
+    }
+
+    // ----------------------------------------------------
+    // EDITAR HOTSPOT
+    // ----------------------------------------------------
+    if (editHotspotBtn && !editHotspotBtn.dataset.bound) {
+      editHotspotBtn.addEventListener("click", () => {
+        currentTool = "hotspot-edit";
+
+        selectedObject = null;
+        selectedHotspot = null;
+
+        updateInspector();
+        updateToolButtons();
+
+        draw();
+      });
+
+      editHotspotBtn.dataset.bound = "true";
+    }
+
+    // ----------------------------------------------------
+    // ELIMINAR HOTSPOT
+    // ----------------------------------------------------
+    if (deleteHotspotBtn && !deleteHotspotBtn.dataset.bound) {
+      deleteHotspotBtn.addEventListener("click", () => {
+        currentTool = "hotspot-delete";
+
+        selectedObject = null;
+        selectedHotspot = null;
+
+        updateToolButtons();
+        updateInspector();
+
+        draw();
+      });
+
+      deleteHotspotBtn.dataset.bound = "true";
+    }
+
+    // ----------------------------------------------------
     // EVENTOS DEL CANVAS
     // ----------------------------------------------------
     if (canvas && !canvas.dataset.bound) {
       canvas.addEventListener("mousedown", (e) => {
+        // ---------------------------------------------------
+        // EMPEZAR A CREAR HOTSPOT
+        // ---------------------------------------------------
+        if (currentTool === "hotspot-create") {
+          if (!image) return;
+
+          const point = getCanvasPoint(e);
+
+          drawingHotspot = true;
+
+          hotspotStart = {
+            x: point.x,
+            y: point.y,
+          };
+
+          hotspotPreview = {
+            x: point.x,
+            y: point.y,
+            width: 0,
+            height: 0,
+          };
+
+          draw();
+          return;
+        }
+
+        // ---------------------------------------------------
+        // SELECCIONAR OBJETOS
+        // ---------------------------------------------------
+        if (trySelectHotspot(e)) {
+          return;
+        }
+
+        if (tryDeleteHotspot(e)) {
+          return;
+        }
+
+        if (tryDeleteObject(e)) {
+          return;
+        }
+
         if (trySelectObject(e)) {
           return;
         }
 
+        // ---------------------------------------------------
+        // PINTAR O BORRAR COLISIONES
+        // ---------------------------------------------------
         drawing = true;
         paintAtEvent(e);
       });
 
       canvas.addEventListener("mousemove", (e) => {
+        // ---------------------------------------------------
+        // ACTUALIZAR RECTÁNGULO DEL HOTSPOT
+        // ---------------------------------------------------
+        if (
+          currentTool === "hotspot-create" &&
+          drawingHotspot &&
+          hotspotStart
+        ) {
+          const point = getCanvasPoint(e);
+
+          hotspotPreview = {
+            x: Math.min(hotspotStart.x, point.x),
+            y: Math.min(hotspotStart.y, point.y),
+
+            width: Math.abs(point.x - hotspotStart.x),
+            height: Math.abs(point.y - hotspotStart.y),
+          };
+
+          draw();
+          return;
+        }
+
+        // ---------------------------------------------------
+        // ARRASTRAR OBJETO
+        // ---------------------------------------------------
         if (draggingObject) {
           dragSelectedObject(e);
           return;
         }
 
+        // ---------------------------------------------------
+        // ARRASTRAR HOTSPOT
+        // ---------------------------------------------------
+
+        if (draggingHotspot && selectedHotspot) {
+          const point = getCanvasPoint(e);
+
+          selectedHotspot.x = Math.round(point.x - hotspotOffsetX);
+
+          selectedHotspot.y = Math.round(point.y - hotspotOffsetY);
+
+          draw();
+
+          return;
+        }
+
+        // ---------------------------------------------------
+        // PINTAR O BORRAR COLISIONES
+        // ---------------------------------------------------
         if (!drawing) return;
 
         paintAtEvent(e);
       });
 
       window.addEventListener("mouseup", () => {
-        drawing = false;
-        draggingObject = false;
-      });
+        // ---------------------------------------------------
+        // TERMINAR CREACIÓN DEL HOTSPOT
+        // ---------------------------------------------------
+        if (
+          currentTool === "hotspot-create" &&
+          drawingHotspot &&
+          hotspotPreview
+        ) {
+          drawingHotspot = false;
 
+          // Evitar zonas creadas accidentalmente con un solo clic
+          if (hotspotPreview.width >= 4 && hotspotPreview.height >= 4) {
+            const hotspotNumber = editorHotspots.length + 1;
+
+            const defaultHotspot = window.HotspotLibrary?.[0];
+
+            const newHotspot = {
+              id: `hotspot_${hotspotNumber}`,
+
+              typeId: defaultHotspot?.id ?? null,
+
+              x: hotspotPreview.x,
+              y: hotspotPreview.y,
+
+              width: hotspotPreview.width,
+              height: hotspotPreview.height,
+            };
+
+            editorHotspots.push(newHotspot);
+
+            selectedHotspot = newHotspot;
+            selectedObject = null;
+
+            updateInspector();
+          }
+
+          hotspotStart = null;
+          hotspotPreview = null;
+
+          draw();
+        }
+
+        drawing = false;
+
+        draggingObject = false;
+        draggingHotspot = false;
+      });
       canvas.addEventListener("contextmenu", (e) => {
         e.preventDefault();
       });
@@ -253,17 +451,34 @@ window.EditorModule = (() => {
     updateToolButtons();
   }
 
+  function activateTool(tool) {
+    currentTool = tool;
+
+    selectedObject = null;
+    selectedHotspot = null;
+
+    draggingObject = false;
+    draggingHotspot = false;
+
+    updateInspector();
+    updateToolButtons();
+    draw();
+  }
+
   function updateToolButtons() {
     const paintBtn = document.getElementById("paint-collision-btn");
     const eraseBtn = document.getElementById("erase-mode-btn");
     const editObjectBtn = document.getElementById("edit-object-btn");
     const addObjectBtn = document.getElementById("add-object-btn");
     const deleteObjectBtn = document.getElementById("delete-object-btn");
+    const addHotspotBtn = document.getElementById("btn-add-hotspot");
+    const editHotspotBtn = document.getElementById("btn-edit-hotspots");
+    const deleteHotspotBtn = document.getElementById("btn-delete-hotspot");
 
     // --------------------------------------
     // HABILITAR / DESHABILITAR ELIMINAR
     // --------------------------------------
-    deleteObjectBtn.disabled = selectedObject === null;
+    //deleteObjectBtn.disabled = selectedObject === null;
 
     paintBtn.style.outline = "none";
     eraseBtn.style.outline = "none";
@@ -272,16 +487,41 @@ window.EditorModule = (() => {
     addObjectBtn.style.outline = "none";
     deleteObjectBtn.style.outline = "none";
 
+    editHotspotBtn.style.outline = "none";
+
+    addHotspotBtn.style.outline = "none";
+    deleteHotspotBtn.style.outline = "none";
+
     if (currentTool === "paint") {
-      paintBtn.style.outline = "3px solid #ffe600";
+      paintBtn.style.outline = "6px solid #000000";
     }
 
     if (currentTool === "erase") {
-      eraseBtn.style.outline = "3px solid #ffe600";
+      eraseBtn.style.outline = "6px solid #000000";
     }
 
     if (currentTool === "object") {
-      editObjectBtn.style.outline = "3px solid #ffe600";
+      editObjectBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "object-create") {
+      addObjectBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "object-delete") {
+      deleteObjectBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "hotspot-edit") {
+      editHotspotBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "hotspot-create") {
+      addHotspotBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "hotspot-delete") {
+      deleteHotspotBtn.style.outline = "6px solid #000000";
     }
   }
 
@@ -312,6 +552,21 @@ window.EditorModule = (() => {
     };
 
     img.src = URL.createObjectURL(file);
+  }
+
+  // -------------------------------------------------------
+  // OBTENER POSICIÓN DEL RATÓN DENTRO DEL CANVAS
+  // -------------------------------------------------------
+  function getCanvasPoint(e) {
+    const rect = canvas.getBoundingClientRect();
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    return {
+      x: Math.round((e.clientX - rect.left) * scaleX),
+      y: Math.round((e.clientY - rect.top) * scaleY),
+    };
   }
 
   function paintAtEvent(e) {
@@ -384,7 +639,6 @@ window.EditorModule = (() => {
   // -------------------------------------------------------
   function addDefaultObject() {
     if (!image) {
-      alert("Primero carga un mapa.");
       return;
     }
 
@@ -415,14 +669,20 @@ window.EditorModule = (() => {
 
       visible: true,
 
-      // -------------------------
-      // COMPORTAMIENTO
-      // -------------------------
-
       pickup: libraryItem.pickup ?? false,
-      locked: libraryItem.locked ?? false,
-
       collected: false,
+
+      locked: libraryItem.locked ?? false,
+      opened: libraryItem.opened ?? false,
+
+      requiredItem: libraryItem.requiredItem ?? null,
+
+      openSprite: libraryItem.openSprite ?? null,
+
+      teleportTo: libraryItem.teleportTo ?? null,
+      teleportX: libraryItem.teleportX ?? 0,
+      teleportY: libraryItem.teleportY ?? 0,
+      teleportDirection: libraryItem.teleportDirection ?? "down",
     };
 
     editorObjects.push(obj);
@@ -440,13 +700,28 @@ window.EditorModule = (() => {
     if (!image) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     ctx.drawImage(image, 0, 0);
 
     drawCollisionOverlay();
+
     drawEditorObjects();
+
+    // ------------------------------------------
+    // HOTSPOTS YA CREADOS
+    // ------------------------------------------
+
+    drawEditorHotspots();
+
+    // ------------------------------------------
+    // HOTSPOT QUE SE ESTÁ DIBUJANDO
+    // ------------------------------------------
+
+    drawHotspotPreview();
 
     if (showGrid) {
       drawGrid();
+
       drawColumnNumbers();
     }
   }
@@ -507,6 +782,70 @@ window.EditorModule = (() => {
   }
 
   // -------------------------------------------------------
+  // DIBUJAR HOTSPOTS
+  // -------------------------------------------------------
+  function drawEditorHotspots() {
+    ctx.save();
+
+    editorHotspots.forEach((hotspot) => {
+      // color
+      if (hotspot === selectedHotspot) {
+        ctx.fillStyle = "rgba(0,255,255,0.35)";
+        ctx.strokeStyle = "#00ffff";
+      } else {
+        ctx.fillStyle = "rgba(255,255,0,0.25)";
+        ctx.strokeStyle = "#ffff00";
+      }
+
+      ctx.lineWidth = 2;
+
+      ctx.fillRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
+
+      ctx.strokeRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
+    });
+
+    ctx.restore();
+  }
+
+  // -------------------------------------------------------
+  // PREVISUALIZACIÓN DEL HOTSPOT
+  // -------------------------------------------------------
+
+  function drawHotspotPreview() {
+    if (!hotspotPreview) return;
+
+    ctx.save();
+
+    ctx.fillStyle = "rgba(255,255,0,0.25)";
+
+    ctx.strokeStyle = "#ffff00";
+
+    ctx.lineWidth = 2;
+
+    ctx.fillRect(
+      hotspotPreview.x,
+
+      hotspotPreview.y,
+
+      hotspotPreview.width,
+
+      hotspotPreview.height,
+    );
+
+    ctx.strokeRect(
+      hotspotPreview.x,
+
+      hotspotPreview.y,
+
+      hotspotPreview.width,
+
+      hotspotPreview.height,
+    );
+
+    ctx.restore();
+  }
+
+  // -------------------------------------------------------
   // SELECCIONAR OBJETO
   // -------------------------------------------------------
   function trySelectObject(e) {
@@ -535,6 +874,7 @@ window.EditorModule = (() => {
         mouseY <= obj.y + obj.hitboxHeight
       ) {
         selectedObject = obj;
+        selectedHotspot = null;
 
         updateInspector();
         updateToolButtons();
@@ -543,6 +883,110 @@ window.EditorModule = (() => {
 
         dragOffsetX = mouseX - obj.x;
         dragOffsetY = mouseY - obj.y;
+
+        draw();
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // -------------------------------------------------------
+  // ELIMINAR OBJETO
+  // -------------------------------------------------------
+  function tryDeleteObject(e) {
+    if (currentTool !== "object-delete") {
+      return false;
+    }
+
+    const point = getCanvasPoint(e);
+
+    for (let i = editorObjects.length - 1; i >= 0; i--) {
+      const obj = editorObjects[i];
+
+      if (
+        point.x >= obj.x &&
+        point.x <= obj.x + obj.hitboxWidth &&
+        point.y >= obj.y &&
+        point.y <= obj.y + obj.hitboxHeight
+      ) {
+        editorObjects.splice(i, 1);
+
+        selectedObject = null;
+
+        updateInspector();
+        draw();
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // -------------------------------------------------------
+  // SELECCIONAR HOTSPOT
+  // -------------------------------------------------------
+
+  function trySelectHotspot(e) {
+    if (currentTool !== "hotspot-edit") return false;
+
+    const point = getCanvasPoint(e);
+
+    selectedHotspot = null;
+
+    for (let i = editorHotspots.length - 1; i >= 0; i--) {
+      const hotspot = editorHotspots[i];
+
+      if (
+        point.x >= hotspot.x &&
+        point.x <= hotspot.x + hotspot.width &&
+        point.y >= hotspot.y &&
+        point.y <= hotspot.y + hotspot.height
+      ) {
+        selectedHotspot = hotspot;
+        selectedObject = null;
+
+        draggingHotspot = true;
+
+        hotspotOffsetX = point.x - hotspot.x;
+        hotspotOffsetY = point.y - hotspot.y;
+
+        updateInspector();
+
+        draw();
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // -------------------------------------------------------
+  // ELIMINAR HOTSPOT
+  // -------------------------------------------------------
+  function tryDeleteHotspot(e) {
+    if (currentTool !== "hotspot-delete") return false;
+
+    const point = getCanvasPoint(e);
+
+    for (let i = editorHotspots.length - 1; i >= 0; i--) {
+      const hotspot = editorHotspots[i];
+
+      if (
+        point.x >= hotspot.x &&
+        point.x <= hotspot.x + hotspot.width &&
+        point.y >= hotspot.y &&
+        point.y <= hotspot.y + hotspot.height
+      ) {
+        editorHotspots.splice(i, 1);
+
+        selectedHotspot = null;
+
+        updateInspector();
 
         draw();
 
@@ -585,6 +1029,46 @@ window.EditorModule = (() => {
 
     if (!inspector) return;
 
+    // -------------------------------------------------------
+    // HOTSPOT SELECCIONADO
+    // -------------------------------------------------------
+
+    if (selectedHotspot) {
+      const options = window.HotspotLibrary.map((item) => {
+        const selected = item.id === selectedHotspot.typeId ? "selected" : "";
+
+        return `
+            <option value="${item.id}" ${selected}>
+                ${item.name}
+            </option>
+        `;
+      }).join("");
+
+      inspector.innerHTML = `
+
+        <strong>ID HOTSPOT MAP</strong>
+
+        <p>${selectedHotspot.id}</p>
+
+        <hr>
+
+        <strong>SELECCIONAR HOTSPOT</strong>
+
+        <select
+            id="hotspot-type"
+            class="editor-select">
+
+            ${options}
+
+        </select>
+
+    `;
+
+      bindHotspotInspectorEvents();
+
+      return;
+    }
+
     // --------------------------------------------
     // NO HAY OBJETO SELECCIONADO
     // --------------------------------------------
@@ -603,30 +1087,12 @@ window.EditorModule = (() => {
     // --------------------------------------------
     inspector.innerHTML = `
 
-    <strong>ID</strong>
+    <strong>ID ITEM MAP</strong>
     <p>${selectedObject.id}</p>
 
     <hr>
 
-    <strong>Nombre</strong>
-
-    <input
-        id="inspector-name"
-        class="editor-input"
-        type="text"
-        value="${selectedObject.name}"
-    >
-
-    <strong>Descripción</strong>
-
-    <textarea
-        id="inspector-description"
-        class="editor-textarea"
-    >${selectedObject.description}</textarea>
-
-    <hr>
-
-    <strong>SPRITE</strong>
+    <strong>ITEM + SPRITE</strong>
 
     <select
         id="inspector-sprite"
@@ -646,53 +1112,15 @@ window.EditorModule = (() => {
 
     </select>
 
-    <p>
-        ${selectedObject.spriteWidth}
-        x
-        ${selectedObject.spriteHeight}
-    </p>
-
-    <hr>
-
-    <strong>HITBOX</strong>
-
-    <p>
-        ${selectedObject.hitboxWidth}
-        x
-        ${selectedObject.hitboxHeight}
-    </p>
-
     `;
 
     bindInspectorEvents();
   }
 
   function bindInspectorEvents() {
-    const nameInput = document.getElementById("inspector-name");
-
-    const descriptionInput = document.getElementById("inspector-description");
-
     const spriteSelect = document.getElementById("inspector-sprite");
 
     if (!selectedObject) return;
-
-    // ---------------------------------------------------
-    // NOMBRE
-    // ---------------------------------------------------
-    if (nameInput) {
-      nameInput.addEventListener("input", () => {
-        selectedObject.name = nameInput.value;
-      });
-    }
-
-    // ---------------------------------------------------
-    // DESCRIPCIÓN
-    // ---------------------------------------------------
-    if (descriptionInput) {
-      descriptionInput.addEventListener("input", () => {
-        selectedObject.description = descriptionInput.value;
-      });
-    }
 
     // ---------------------------------------------------
     // CAMBIAR SPRITE
@@ -705,15 +1133,26 @@ window.EditorModule = (() => {
           (item) => item.sprite === selectedObject.sprite,
         );
 
+        selectedObject.name = libraryItem.name;
+        selectedObject.description = libraryItem.description ?? "";
+
         if (!libraryItem) return;
 
+        // hereda atributos de los objetos del catálogo
         selectedObject.spriteWidth = libraryItem.defaultSpriteWidth;
-
         selectedObject.spriteHeight = libraryItem.defaultSpriteHeight;
-
         selectedObject.hitboxWidth = libraryItem.defaultHitboxWidth;
-
         selectedObject.hitboxHeight = libraryItem.defaultHitboxHeight;
+        selectedObject.pickup = libraryItem.pickup ?? false;
+        selectedObject.locked = libraryItem.locked ?? false;
+        selectedObject.opened = libraryItem.opened ?? false;
+        selectedObject.requiredItem = libraryItem.requiredItem ?? null;
+        selectedObject.openSprite = libraryItem.openSprite ?? null;
+        selectedObject.teleportTo = libraryItem.teleportTo ?? null;
+        selectedObject.teleportX = libraryItem.teleportX ?? 0;
+        selectedObject.teleportY = libraryItem.teleportY ?? 0;
+        selectedObject.teleportDirection =
+          libraryItem.teleportDirection ?? "down";
 
         loadEditorObjectSprite(selectedObject.sprite);
 
@@ -726,11 +1165,27 @@ window.EditorModule = (() => {
   }
 
   // -------------------------------------------------------
+  // EVENTOS DEL INSPECTOR DEL HOTSPOT
+  // -------------------------------------------------------
+
+  function bindHotspotInspectorEvents() {
+    const select = document.getElementById("hotspot-type");
+
+    if (!select) return;
+
+    select.addEventListener("change", () => {
+      selectedHotspot.typeId = select.value;
+
+      draw();
+    });
+  }
+
+  // -------------------------------------------------------
   // DIBUJAR REJILLA
   // -------------------------------------------------------
   function drawGrid() {
     ctx.save();
-    ctx.strokeStyle = "rgba(255, 230, 0, 0.95)";
+    ctx.strokeStyle = "rgba(13, 255, 0, 0.95)";
     ctx.lineWidth = 1;
 
     for (let x = 0; x <= cols * TILE_W; x += TILE_W) {
@@ -781,6 +1236,8 @@ window.EditorModule = (() => {
       walkable: grid,
 
       objects: editorObjects,
+
+      hotspots: editorHotspots,
     };
 
     const blob = new Blob(
@@ -836,7 +1293,7 @@ window.EditorModule = (() => {
 
     </div>
 
-`;
+    `;
       const loadButton = document.createElement("button");
 
       loadButton.textContent = "Cargar";
@@ -906,15 +1363,14 @@ window.EditorModule = (() => {
     //--------------------------------------------------
 
     cols = data.cols;
-
     rows = data.rows;
-
     grid = data.walkable;
+    editorObjects = data.objects ?? [];
 
-    editorObjects = data.objects;
+    editorHotspots = data.hotspots ?? [];
 
     selectedObject = null;
-
+    selectedHotspot = null;
     //--------------------------------------------------
     // Cargar sprites de los objetos
     //--------------------------------------------------
@@ -924,9 +1380,7 @@ window.EditorModule = (() => {
     });
 
     updateInspector();
-
     draw();
-
     closeEditorPopup();
   }
 

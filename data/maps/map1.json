@@ -228,10 +228,10 @@
     },
     {
       "id": "object_2",
-      "name": "Puerta",
-      "description": "Es una puerta robusta.",
-      "x": 167,
-      "y": 29,
+      "name": "Llave",
+      "description": "Objeto creado desde el editor.",
+      "x": 168,
+      "y": 30,
       "spriteWidth": 50,
       "spriteHeight": 60,
       "hitboxWidth": 48,
@@ -240,18 +240,14 @@
       "visible": true,
       "pickup": false,
       "collected": false,
-
       "locked": true,
       "opened": false,
-      "requiredItem":"key",
-
+      "requiredItem": "key",
       "openSprite": "002_door_main_open.png",
       "teleportTo": "map2",
       "teleportX": 5,
-      "teleportY": 8,
-      "teleportDirection": "down"
-
+      "teleportY": 4,
+      "teleportDirection": "right"
     }
-   
   ]
 }
