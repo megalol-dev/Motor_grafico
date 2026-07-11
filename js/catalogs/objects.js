@@ -38,7 +38,7 @@
 
 window.ObjectLibrary = [
   // ---------------------------------------------
-  // LLAVE
+  // Item - LLAVE
   // ---------------------------------------------
   {
     id: "key",
@@ -56,7 +56,7 @@ window.ObjectLibrary = [
   },
 
   // ---------------------------------------------
-  // PUERTA PRINCIPAL
+  // Door - PUERTA PRINCIPAL - map 1
   // ---------------------------------------------
   {
     id: "door_main",
@@ -78,6 +78,9 @@ window.ObjectLibrary = [
     opened: false,
 
     requiredItem: "key",
+    interactionMode: "front",
+
+    teleportMode: "inside",
 
     teleportTo: "map2",
     teleportX: 5,
@@ -86,7 +89,7 @@ window.ObjectLibrary = [
   },
 
   // ---------------------------------------------
-  // PUERTA PRINCIPAL - dentro de la casa
+  // Door - PUERTA PRINCIPAL / Salida - map 2
   // ---------------------------------------------
   {
     id: "door_1_close",
@@ -105,11 +108,13 @@ window.ObjectLibrary = [
 
     locked: true,
     opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
 
     teleportTo: "map1",
     teleportX: 8,
-    teleportY: 5,
-    teleportDirection: "dawn",
+    teleportY: 4,
+    teleportDirection: "down",
   },
 
   // ---------------------------------------------

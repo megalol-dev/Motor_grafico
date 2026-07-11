@@ -49,6 +49,7 @@ window.EditorModule = (() => {
   let draggingObject = false;
 
   let draggingHotspot = false;
+  let settingInteractionPoint = false;
 
   let hotspotOffsetX = 0;
   let hotspotOffsetY = 0;
@@ -286,6 +287,29 @@ window.EditorModule = (() => {
     // ----------------------------------------------------
     if (canvas && !canvas.dataset.bound) {
       canvas.addEventListener("mousedown", (e) => {
+        // ---------------------------------------------------
+        // DEFINIR PUNTO DE INTERACCIÓN
+        // ---------------------------------------------------
+
+        if (settingInteractionPoint && selectedObject) {
+          const point = getCanvasPoint(e);
+
+          const col = Math.floor(point.x / TILE_W);
+
+          const row = Math.floor(point.y / TILE_H);
+
+          selectedObject.interactionTileX = col;
+
+          selectedObject.interactionTileY = row;
+
+          settingInteractionPoint = false;
+
+          updateInspector();
+
+          draw();
+
+          return;
+        }
         // ---------------------------------------------------
         // EMPEZAR A CREAR HOTSPOT
         // ---------------------------------------------------
@@ -683,6 +707,11 @@ window.EditorModule = (() => {
       teleportX: libraryItem.teleportX ?? 0,
       teleportY: libraryItem.teleportY ?? 0,
       teleportDirection: libraryItem.teleportDirection ?? "down",
+      interactionMode: libraryItem.interactionMode ?? "front",
+      teleportMode: libraryItem.teleportMode ?? "front",
+
+      interactionTileX: libraryItem.interactionTileX ?? null,
+      interactionTileY: libraryItem.interactionTileY ?? null,
     };
 
     editorObjects.push(obj);
@@ -758,6 +787,33 @@ window.EditorModule = (() => {
       // --------------------------------------------
       if (sprite) {
         ctx.drawImage(sprite, obj.x, obj.y, obj.spriteWidth, obj.spriteHeight);
+      }
+
+      // --------------------------------------------
+      // PUNTO DE INTERACCIÓN
+      // --------------------------------------------
+
+      if (
+        Number.isInteger(obj.interactionTileX) &&
+        Number.isInteger(obj.interactionTileY)
+      ) {
+        const x = obj.interactionTileX * TILE_W + TILE_W / 2;
+
+        const y = obj.interactionTileY * TILE_H + TILE_H / 2;
+
+        ctx.strokeStyle = "#ff0000";
+
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y - 6);
+        ctx.lineTo(x + 6, y + 6);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y - 6);
+        ctx.lineTo(x - 6, y + 6);
+        ctx.stroke();
       }
 
       // --------------------------------------------
@@ -1112,6 +1168,15 @@ window.EditorModule = (() => {
 
     </select>
 
+    <hr>
+
+    <button
+      id="btn-set-interaction"
+      class="editor-button"
+    >
+      Definir punto interacción
+    </button>
+
     `;
 
     bindInspectorEvents();
@@ -1119,6 +1184,7 @@ window.EditorModule = (() => {
 
   function bindInspectorEvents() {
     const spriteSelect = document.getElementById("inspector-sprite");
+    const interactionBtn = document.getElementById("btn-set-interaction");
 
     if (!selectedObject) return;
 
@@ -1153,6 +1219,10 @@ window.EditorModule = (() => {
         selectedObject.teleportY = libraryItem.teleportY ?? 0;
         selectedObject.teleportDirection =
           libraryItem.teleportDirection ?? "down";
+        selectedObject.interactionMode = libraryItem.interactionMode ?? "front";
+        selectedObject.teleportMode = libraryItem.teleportMode ?? "front";
+        selectedObject.interactionTileX = libraryItem.interactionTileX ?? null;
+        selectedObject.interactionTileY = libraryItem.interactionTileY ?? null;
 
         loadEditorObjectSprite(selectedObject.sprite);
 
@@ -1160,6 +1230,18 @@ window.EditorModule = (() => {
         updateToolButtons();
 
         draw();
+      });
+    }
+
+    // ---------------------------------------------------
+    // DEFINIR PUNTO DE INTERACCIÓN
+    // ---------------------------------------------------
+
+    if (interactionBtn) {
+      interactionBtn.addEventListener("click", () => {
+        settingInteractionPoint = true;
+
+        interactionBtn.textContent = "Haz click en el mapa...";
       });
     }
   }
@@ -1224,6 +1306,53 @@ window.EditorModule = (() => {
   // GUARDAR MAPA en json con todos sus objetos
   // -------------------------------------------------------
   function saveMap() {
+    // -------------------------------------------------------
+    // SINCRONIZAR TODOS LOS OBJETOS CON EL CATÁLOGO
+    // -------------------------------------------------------
+    editorObjects.forEach((obj) => {
+      const libraryItem = window.ObjectLibrary.find(
+        (item) => item.sprite === obj.sprite,
+      );
+
+      if (!libraryItem) {
+        return;
+      }
+
+      obj.name = libraryItem.name;
+      obj.description = libraryItem.description ?? "";
+
+      obj.spriteWidth = libraryItem.defaultSpriteWidth;
+
+      obj.spriteHeight = libraryItem.defaultSpriteHeight;
+
+      obj.hitboxWidth = libraryItem.defaultHitboxWidth;
+
+      obj.hitboxHeight = libraryItem.defaultHitboxHeight;
+
+      obj.pickup = libraryItem.pickup ?? false;
+
+      obj.locked = libraryItem.locked ?? false;
+
+      obj.opened = libraryItem.opened ?? false;
+
+      obj.requiredItem = libraryItem.requiredItem ?? null;
+
+      obj.openSprite = libraryItem.openSprite ?? null;
+
+      obj.teleportTo = libraryItem.teleportTo ?? null;
+
+      obj.teleportX = libraryItem.teleportX ?? 0;
+
+      obj.teleportY = libraryItem.teleportY ?? 0;
+
+      obj.teleportDirection = libraryItem.teleportDirection ?? "down";
+
+      obj.interactionMode = libraryItem.interactionMode ?? "front";
+
+      obj.teleportMode = libraryItem.teleportMode ?? "front";
+
+    });
+
     const data = {
       image: currentMapImage,
 

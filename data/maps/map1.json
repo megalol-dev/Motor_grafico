@@ -48,7 +48,7 @@
       0,
       0,
       0,
-      0,
+      1,
       0,
       0,
       0,
@@ -82,7 +82,7 @@
       0,
       0,
       0,
-      0,
+      1,
       0,
       0,
       0,
@@ -214,9 +214,9 @@
     {
       "id": "object_1",
       "name": "Llave",
-      "description": "Es una llave pequeña y dorada.",
-      "x": 615,
-      "y": 54,
+      "description": "",
+      "x": 542,
+      "y": 50,
       "spriteWidth": 16,
       "spriteHeight": 16,
       "hitboxWidth": 16,
@@ -224,13 +224,25 @@
       "sprite": "001_key.png",
       "visible": true,
       "pickup": true,
-      "collected": false
+      "collected": false,
+      "locked": false,
+      "opened": false,
+      "requiredItem": null,
+      "openSprite": null,
+      "teleportTo": null,
+      "teleportX": 0,
+      "teleportY": 0,
+      "teleportDirection": "down",
+      "interactionMode": "front",
+      "teleportMode": "front",
+      "interactionTileX": null,
+      "interactionTileY": null
     },
     {
       "id": "object_2",
-      "name": "Llave",
-      "description": "Objeto creado desde el editor.",
-      "x": 168,
+      "name": "Puerta principal",
+      "description": "",
+      "x": 167,
       "y": 30,
       "spriteWidth": 50,
       "spriteHeight": 60,
@@ -247,7 +259,12 @@
       "teleportTo": "map2",
       "teleportX": 5,
       "teleportY": 4,
-      "teleportDirection": "right"
+      "teleportDirection": "right",
+      "interactionMode": "front",
+      "teleportMode": "inside",
+      "interactionTileX": 8,
+      "interactionTileY": 2
     }
-  ]
+  ],
+  "hotspots": []
 }

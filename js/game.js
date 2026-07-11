@@ -158,6 +158,12 @@ window.GameModule = (() => {
     },
 
     // -------------------------------------------------------
+    // RUTA CALCULADA MEDIANTE A*
+    // -------------------------------------------------------
+    path: [],
+    pathIndex: 0,
+
+    // -------------------------------------------------------
     // INTERACCIÓN PENDIENTE
     // -------------------------------------------------------
     pendingInteraction: null,
@@ -432,6 +438,9 @@ window.GameModule = (() => {
     state.target.active = false;
     state.pendingInteraction = null;
     state.pendingTeleport = null;
+    state.path = [];
+    state.pathIndex = 0;
+    state.pendingHotspot = null;
 
     centerCameraOnPlayer();
     render();
@@ -537,6 +546,8 @@ window.GameModule = (() => {
       ) {
         state.keys.add(key);
         state.target.active = false;
+        state.path = [];
+        state.pathIndex = 0;
 
         event.preventDefault();
       }
@@ -616,13 +627,12 @@ window.GameModule = (() => {
             return;
           }
 
-          state.target.x =
-            interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+          if (!createPathToTile(interactionTile.col, interactionTile.row)) {
+            showTemporaryMessage("No encuentro un camino.", 2000);
 
-          state.target.y =
-            (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+            return;
+          }
 
-          state.target.active = true;
           state.pendingInteraction = clickedObject;
 
           const dx = state.target.x - state.player.x;
@@ -647,13 +657,12 @@ window.GameModule = (() => {
             return;
           }
 
-          state.target.x =
-            interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+          if (!createPathToTile(interactionTile.col, interactionTile.row)) {
+            showTemporaryMessage("No encuentro un camino.", 2000);
 
-          state.target.y =
-            (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+            return;
+          }
 
-          state.target.active = true;
           state.pendingInteraction = clickedObject;
 
           const dx = state.target.x - state.player.x;
@@ -675,24 +684,18 @@ window.GameModule = (() => {
               `No puedo llegar a ${clickedObject.name}`,
               2000,
             );
+
             return;
           }
 
-          state.target.x =
-            interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+          if (!createPathToTile(interactionTile.col, interactionTile.row)) {
+            showTemporaryMessage("No encuentro un camino.", 2000);
 
-          state.target.y =
-            (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+            return;
+          }
 
-          state.target.active = true;
-
-          // Cuando llegue al objeto se ejecutará handleObjectInteraction()
+          // Al terminar la ruta se ejecutará la interacción con la puerta
           state.pendingInteraction = clickedObject;
-
-          const dx = state.target.x - state.player.x;
-          const dy = state.target.y - state.player.y;
-
-          updateDirectionFromVector(dx, dy);
 
           return;
         }
@@ -712,13 +715,11 @@ window.GameModule = (() => {
             return;
           }
 
-          state.target.x =
-            interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+          if (!createPathToTile(interactionTile.col, interactionTile.row)) {
+            showTemporaryMessage("No encuentro un camino.", 2000);
 
-          state.target.y =
-            (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
-
-          state.target.active = true;
+            return;
+          }
 
           state.pendingInteraction = clickedObject;
 
@@ -745,6 +746,16 @@ window.GameModule = (() => {
       // CLICK SOBRE HOTSPOT
       // ---------------------------------------------------
       if (clickedHotspot) {
+        const verb = state.currentVerb.toLowerCase();
+
+        // ---------------------------------------------------
+        // WHAT IS -> NO CAMINAR
+        // ---------------------------------------------------
+        if (verb === "what is") {
+          handleHotspotInteraction(clickedHotspot);
+
+          return;
+        }
         const interactionTile = findInteractionTileForHotspot(clickedHotspot);
 
         if (!interactionTile) {
@@ -753,22 +764,13 @@ window.GameModule = (() => {
           return;
         }
 
-        state.target.x =
-          interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+        if (!createPathToTile(interactionTile.col, interactionTile.row)) {
+          showTemporaryMessage("No encuentro un camino.", 2000);
 
-        state.target.y =
-          (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
-
-        state.target.active = true;
+          return;
+        }
 
         state.pendingHotspot = clickedHotspot;
-
-        const player = getActiveCharacter();
-
-        updateDirectionFromVector(
-          state.target.x - player.x,
-          state.target.y - player.y,
-        );
 
         return;
       }
@@ -776,6 +778,7 @@ window.GameModule = (() => {
       // MOVIMIENTO DEL PERSONAJE
       // ---------------------------------------------------
       const clickedCol = Math.floor(worldPoint.x / mapData.tileWidth);
+
       const clickedRow = Math.floor(
         (worldPoint.y - FOOT_OFFSET_Y) / mapData.tileHeight,
       );
@@ -784,25 +787,20 @@ window.GameModule = (() => {
 
       if (!targetTile) {
         state.target.active = false;
-        state.player.moving = false;
+        state.path = [];
+        state.pathIndex = 0;
 
         return;
       }
 
-      state.target.x =
-        targetTile.col * mapData.tileWidth + mapData.tileWidth / 2;
+      if (!createPathToTile(targetTile.col, targetTile.row)) {
+        showTemporaryMessage("No encuentro un camino.", 2000);
 
-      state.target.y =
-        (targetTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+        return;
+      }
 
-      state.target.active = true;
-
-      const player = getActiveCharacter();
-
-      const dx = state.target.x - player.x;
-      const dy = state.target.y - player.y;
-
-      updateDirectionFromVector(dx, dy);
+      state.pendingInteraction = null;
+      state.pendingHotspot = null;
 
       // Si estamos usando un objeto del inventario,
       // no cancelar el modo USE.
@@ -1022,11 +1020,233 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // DEVUELVE LA CELDA EN LA QUE ESTÁ EL PERSONAJE
+  // -------------------------------------------------------
+  function getCharacterTile(character = getActiveCharacter()) {
+    const col = Math.floor(character.x / mapData.tileWidth);
+
+    const row = Math.floor((character.y - FOOT_OFFSET_Y) / mapData.tileHeight);
+
+    return {
+      col,
+      row,
+    };
+  }
+
+  // -------------------------------------------------------
+  // CREA UNA CLAVE ÚNICA PARA UNA CELDA
+  // -------------------------------------------------------
+  function getTileKey(col, row) {
+    return `${col},${row}`;
+  }
+
+  // -------------------------------------------------------
+  // CALCULA UNA RUTA MEDIANTE A*
+  // -------------------------------------------------------
+  function findPathAStar(startCol, startRow, targetCol, targetRow) {
+    if (!isWalkableTile(startCol, startRow)) {
+      return [];
+    }
+
+    if (!isWalkableTile(targetCol, targetRow)) {
+      return [];
+    }
+
+    const startKey = getTileKey(startCol, startRow);
+    const targetKey = getTileKey(targetCol, targetRow);
+
+    // Celdas pendientes de revisar
+    const openSet = [
+      {
+        col: startCol,
+        row: startRow,
+        g: 0,
+        h: Math.abs(targetCol - startCol) + Math.abs(targetRow - startRow),
+        f: 0,
+      },
+    ];
+
+    openSet[0].f = openSet[0].g + openSet[0].h;
+
+    // Celdas ya revisadas
+    const closedSet = new Set();
+
+    // Guarda desde qué celda llegamos a cada posición
+    const cameFrom = new Map();
+
+    // Mejor coste conocido para cada celda
+    const gScores = new Map();
+
+    gScores.set(startKey, 0);
+
+    // Movimiento en cuatro direcciones.
+    // No usamos diagonales para evitar atravesar esquinas.
+    const directions = [
+      { col: 0, row: -1 },
+      { col: 1, row: 0 },
+      { col: 0, row: 1 },
+      { col: -1, row: 0 },
+    ];
+
+    while (openSet.length > 0) {
+      // Elegir la celda con menor coste total
+      let bestIndex = 0;
+
+      for (let i = 1; i < openSet.length; i += 1) {
+        if (openSet[i].f < openSet[bestIndex].f) {
+          bestIndex = i;
+        }
+      }
+
+      const current = openSet.splice(bestIndex, 1)[0];
+      const currentKey = getTileKey(current.col, current.row);
+
+      // Hemos llegado al destino
+      if (currentKey === targetKey) {
+        const path = [];
+
+        let reconstructionKey = targetKey;
+
+        while (reconstructionKey !== startKey) {
+          const [col, row] = reconstructionKey.split(",").map(Number);
+
+          path.unshift({
+            col,
+            row,
+          });
+
+          reconstructionKey = cameFrom.get(reconstructionKey);
+
+          if (!reconstructionKey) {
+            return [];
+          }
+        }
+
+        return path;
+      }
+
+      closedSet.add(currentKey);
+
+      for (const direction of directions) {
+        const nextCol = current.col + direction.col;
+        const nextRow = current.row + direction.row;
+
+        if (!isWalkableTile(nextCol, nextRow)) {
+          continue;
+        }
+
+        const nextKey = getTileKey(nextCol, nextRow);
+
+        if (closedSet.has(nextKey)) {
+          continue;
+        }
+
+        // Cada desplazamiento ortogonal cuesta 1
+        const tentativeG = current.g + 1;
+
+        const previousG = gScores.get(nextKey);
+
+        if (previousG !== undefined && tentativeG >= previousG) {
+          continue;
+        }
+
+        cameFrom.set(nextKey, currentKey);
+        gScores.set(nextKey, tentativeG);
+
+        const h = Math.abs(targetCol - nextCol) + Math.abs(targetRow - nextRow);
+
+        const existingNode = openSet.find(
+          (node) => node.col === nextCol && node.row === nextRow,
+        );
+
+        if (existingNode) {
+          existingNode.g = tentativeG;
+          existingNode.h = h;
+          existingNode.f = tentativeG + h;
+        } else {
+          openSet.push({
+            col: nextCol,
+            row: nextRow,
+            g: tentativeG,
+            h,
+            f: tentativeG + h,
+          });
+        }
+      }
+    }
+
+    // No existe ningún camino posible
+    return [];
+  }
+
+  // -------------------------------------------------------
+  // PREPARA UNA RUTA HACIA UNA CELDA
+  // -------------------------------------------------------
+  function createPathToTile(targetCol, targetRow) {
+    const player = getActiveCharacter();
+
+    const startTile = getCharacterTile(player);
+
+    const path = findPathAStar(
+      startTile.col,
+      startTile.row,
+      targetCol,
+      targetRow,
+    );
+
+    if (path.length === 0) {
+      state.path = [];
+      state.pathIndex = 0;
+      state.target.active = false;
+
+      return false;
+    }
+
+    state.path = path;
+    state.pathIndex = 0;
+
+    return true;
+  }
+
+  // -------------------------------------------------------
   // BUSCA UNA CELDA CAMINABLE CERCA DE UN OBJETO
   // -------------------------------------------------------
   function findInteractionTileForObject(obj) {
     const tileW = mapData.tileWidth;
     const tileH = mapData.tileHeight;
+
+    // -------------------------------------------------------
+    // OBJETOS QUE SE INTERACTÚAN DESDE DENTRO
+    // -------------------------------------------------------
+
+    if (obj.interactionMode === "inside") {
+      // ---------------------------------------------------
+      // Si el objeto define una casilla fija,
+      // siempre usamos esa.
+      // ---------------------------------------------------
+      if (
+        Number.isInteger(obj.interactionTileX) &&
+        Number.isInteger(obj.interactionTileY)
+      ) {
+        return {
+          col: obj.interactionTileX,
+          row: obj.interactionTileY,
+        };
+      }
+
+      // ---------------------------------------------------
+      // Compatibilidad con objetos antiguos
+      // ---------------------------------------------------
+      const centerX = obj.x + obj.hitboxWidth / 2;
+
+      const centerY = obj.y + obj.hitboxHeight / 2;
+
+      return {
+        col: Math.floor(centerX / tileW),
+
+        row: Math.floor(centerY / tileH),
+      };
+    }
 
     const objectCenterX = obj.x + obj.hitboxWidth / 2;
     const objectBottomY = obj.y + obj.hitboxHeight;
@@ -1094,7 +1314,11 @@ window.GameModule = (() => {
     const usedKeyboard = updatePlayerByKeyboard(delta);
 
     if (!usedKeyboard) {
-      updatePlayerByMouseTarget(delta);
+      if (state.path.length > 0) {
+        updatePlayerByPath(delta);
+      } else {
+        updatePlayerByMouseTarget(delta);
+      }
     }
 
     updatePlayerAnimation(delta);
@@ -1143,6 +1367,90 @@ window.GameModule = (() => {
     player.moving = movedDistance > BLOCKED_EPSILON;
 
     return true;
+  }
+
+  // -------------------------------------------------------
+  // MOVIMIENTO SIGUIENDO UNA RUTA (A*)
+  // -------------------------------------------------------
+  function updatePlayerByPath(delta) {
+    const player = getActiveCharacter();
+
+    if (state.path.length === 0 || state.pathIndex >= state.path.length) {
+      player.moving = false;
+      return;
+    }
+
+    const node = state.path[state.pathIndex];
+
+    const targetX = node.col * mapData.tileWidth + mapData.tileWidth / 2;
+
+    const targetY = (node.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+
+    const dx = targetX - player.x;
+    const dy = targetY - player.y;
+
+    const distance = Math.hypot(dx, dy);
+
+    // -----------------------------------------
+    // ¿HEMOS LLEGADO A ESTA CASILLA?
+    // -----------------------------------------
+    if (distance <= TARGET_REACHED_DIST) {
+      state.pathIndex++;
+
+      // -----------------------------------------
+      // ¿HEMOS TERMINADO LA RUTA?
+      // -----------------------------------------
+      if (state.pathIndex >= state.path.length) {
+        state.path = [];
+        state.pathIndex = 0;
+
+        player.moving = false;
+
+        if (state.pendingInteraction) {
+          handleObjectInteraction(state.pendingInteraction);
+
+          state.pendingInteraction = null;
+        }
+
+        if (state.pendingHotspot) {
+          handleHotspotInteraction(state.pendingHotspot);
+
+          state.pendingHotspot = null;
+        }
+
+        if (state.pendingTeleport) {
+          const teleport = state.pendingTeleport;
+
+          state.pendingTeleport = null;
+
+          changeMap(
+            teleport.teleportTo,
+            teleport.teleportX,
+            teleport.teleportY,
+            teleport.teleportDirection ?? "down",
+          );
+
+          return;
+        }
+
+        return;
+      }
+
+      return;
+    }
+
+    const moveX = dx / distance;
+    const moveY = dy / distance;
+
+    updateDirectionFromVector(moveX, moveY);
+
+    const step = player.speed * delta;
+    const actualStep = Math.min(step, distance);
+
+    player.x += moveX * actualStep;
+    player.y += moveY * actualStep;
+
+    player.moving = true;
   }
 
   // -------------------------------------------------------
@@ -1810,6 +2118,15 @@ window.GameModule = (() => {
     const verb = state.currentVerb.toLowerCase();
 
     // ---------------------------------------------------
+    // PUERTA ABIERTA -> TELETRANSPORTE
+    // ---------------------------------------------------
+    if (obj.opened && obj.teleportTo && verb === "walk to") {
+      state.pendingTeleport = obj;
+
+      return;
+    }
+
+    // ---------------------------------------------------
     // WHAT IS
     // ---------------------------------------------------
     if (verb === "what is") {
@@ -1889,6 +2206,7 @@ window.GameModule = (() => {
       ) {
         obj.locked = false;
         obj.opened = true;
+        obj.interactionMode = obj.teleportMode ?? "inside";
 
         if (obj.openSprite) {
           obj.sprite = obj.openSprite;
@@ -1934,22 +2252,6 @@ window.GameModule = (() => {
     // ---------------------------------------
     // PUERTA ABIERTA -> TELETRANSPORTE
     // ---------------------------------------
-
-    if (obj.opened && obj.teleportTo) {
-      const interactionTile = findInteractionTileForObject(obj);
-
-      state.target.x =
-        interactionTile.col * mapData.tileWidth + mapData.tileWidth / 2;
-
-      state.target.y =
-        (interactionTile.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
-
-      state.target.active = true;
-
-      state.pendingTeleport = obj;
-
-      return;
-    }
     if (verb === "open") {
       if (obj.locked) {
         if (actionLine) {
