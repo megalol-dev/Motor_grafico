@@ -51,7 +51,6 @@ El objetivo a largo plazo es continuar ampliando tanto el motor como el propio v
 
 ## 📷 Capturas
 
-### Editor
 
 <h3>Editor</h3>
 
