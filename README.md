@@ -67,7 +67,7 @@ El objetivo a largo plazo es continuar ampliando tanto el motor como el propio v
 
 ## 🏗 Arquitectura
 
-# 🏗 Arquitectura del motor
+# Motor 
 
 El proyecto está organizado siguiendo una arquitectura modular, donde cada parte del motor tiene una responsabilidad concreta. Aunque actualmente se encuentra en su **primera versión estable (v1.0)**, la base ya está preparada para seguir creciendo y será refactorizada en futuras versiones para separar aún más las responsabilidades entre módulos.
 
