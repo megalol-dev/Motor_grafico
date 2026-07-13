@@ -1,39 +1,85 @@
-# Prototipo base - aventura gráfica retro
+# 🎮 Adventure Engine JS
 
-## Qué incluye
-- Pantalla de título con ENTER para comenzar.
-- Pantalla de selección de 7 personajes.
-- El personaje 1 queda fijado como protagonista.
-- Debes elegir 2 personajes más para activar `Start Game`.
-- Pantalla de prueba con:
-  - escenario base
-  - personaje movible
-  - barra de acción
-  - verbos estilo Maniac Mansion
-  - 20 huecos de inventario
+> Motor gráfico 2D para aventuras gráficas estilo Monkey Island desarrollado desde cero con JavaScript y HTML5 Canvas.
 
-## Controles
-- `ENTER`: avanzar en título y selección.
-- `Flechas` o `WASD`: mover personaje en la sala de prueba.
+---
 
-## Estructura
-- `img/characters/` sprites de personajes
-- `img/objects/` futuros objetos
-- `img/maps/` mapas y fondos
-- `data/gameData.json` verbos, personajes y datos del mapa
-- `js/app.js` lógica del prototipo
-- `css/styles.css` interfaz visual
+## 📖 Descripción
 
-## Importante
-Como el proyecto carga JSON con `fetch`, conviene abrirlo con un servidor local.
-Ejemplo rápido:
+...
 
-```bash
-python -m http.server 8000
-```
+---
 
-Y luego abrir en el navegador:
+## ✨ Características
 
-```text
-http://localhost:8000
-```
+- Editor de mapas
+- Editor de colisiones
+- Sistema de objetos
+- Sistema de hotspots
+- Inventario
+- Verbos clásicos
+- Pathfinding A*
+- Teletransportes
+- Inspector visual
+- JSON
+
+---
+
+## 📷 Capturas
+
+### Editor
+
+(Imagen)
+
+### Juego
+
+(Imagen)
+
+### Inspector
+
+(Imagen)
+
+---
+
+## 🏗 Arquitectura
+
+Explicación del motor.
+
+---
+
+## 🛠 Editor
+
+Explicación del editor.
+
+---
+
+## 🚀 Roadmap
+
+- [x] Editor
+- [x] Pathfinding A*
+- [x] Hotspots
+- [x] Objetos
+- [ ] NPC
+- [ ] Diálogos
+- [ ] Scripts
+- [ ] Sonido
+- [ ] Guardado de partida
+
+---
+
+## 💻 Tecnologías
+
+- HTML5
+- CSS3
+- JavaScript
+- Canvas API
+
+---
+
+## ▶ Cómo ejecutar
+
+...
+
+---
+
+## 📄 Licencia
