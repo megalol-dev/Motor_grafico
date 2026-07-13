@@ -461,10 +461,54 @@ El motor carga esos datos y construye automáticamente la escena.
 
 ---
 
-## ▶ Cómo ejecutar
+## ▶ Cómo ejecutar el proyecto
 
-...
+Este proyecto está desarrollado como una aplicación web basada en **HTML5, CSS y JavaScript**, por lo que no requiere ningún proceso de compilación.
+
+Para ejecutarlo de forma local:
+
+1. Clona el repositorio.
+
+```bash
+git clone https://github.com/megalol-dev/Motor_grafico.git
+```
+
+2. Abre la carpeta del proyecto con **Visual Studio Code**.
+
+3. Instala la extensión **Live Server** (si todavía no la tienes).
+
+4. Haz clic derecho sobre el archivo:
+
+```text
+index.html
+```
+
+5. Selecciona:
+
+```text
+Open with Live Server
+```
+
+El navegador abrirá automáticamente la aplicación y ya podrás acceder tanto al motor del juego como al editor integrado.
+
+> **Nota:** El proyecto utiliza carga de archivos JSON mediante `fetch()`, por lo que no funcionará correctamente abriendo directamente el archivo `index.html` desde el explorador de archivos. Es necesario ejecutarlo mediante un servidor local como Live Server.
 
 ---
 
 ## 📄 Licencia
+
+Este proyecto ha sido desarrollado con fines **educativos, de investigación y como parte de un porfolio personal**.
+
+El código fuente puede utilizarse como referencia para aprendizaje y consulta, respetando siempre la autoría del proyecto.
+
+No está permitido utilizar este proyecto, ni partes sustanciales de su código, para fines comerciales o lucrativos sin autorización expresa del autor.
+
+### Recursos gráficos
+
+La versión actual del proyecto utiliza algunos recursos gráficos inspirados o procedentes de videojuegos clásicos (por ejemplo, personajes de la versión de **NES** de *Maniac Mansion*) con el único propósito de realizar una demostración técnica del motor gráfico.
+
+Todos los derechos sobre dichos recursos pertenecen a sus respectivos propietarios.
+
+Cualquier uso comercial, redistribución o explotación de esos recursos por parte de terceros será responsabilidad exclusiva de quien los utilice.
+
+En futuras versiones del proyecto estos recursos podrán ser sustituidos por contenido original para disponer de una identidad visual completamente propia.
