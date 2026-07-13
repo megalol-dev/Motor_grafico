@@ -689,6 +689,7 @@ window.EditorModule = (() => {
       hitboxWidth: libraryItem.defaultHitboxWidth,
       hitboxHeight: libraryItem.defaultHitboxHeight,
 
+      type: libraryItem.type ?? "item",
       sprite: libraryItem.sprite,
 
       visible: true,
@@ -710,8 +711,8 @@ window.EditorModule = (() => {
       interactionMode: libraryItem.interactionMode ?? "front",
       teleportMode: libraryItem.teleportMode ?? "front",
 
-      interactionTileX: libraryItem.interactionTileX ?? null,
-      interactionTileY: libraryItem.interactionTileY ?? null,
+      interactionTileX: null,
+      interactionTileY: null,
     };
 
     editorObjects.push(obj);
@@ -1141,43 +1142,50 @@ window.EditorModule = (() => {
     // --------------------------------------------
     // MOSTRAR DATOS DEL OBJETO
     // --------------------------------------------
+    const interactionButton =
+      selectedObject.type === "door"
+        ? `
+          <hr>
+
+          <button
+            id="btn-set-interaction"
+            class="editor-button"
+          >
+            Definir punto interacción
+          </button>
+          `
+        : "";
+
     inspector.innerHTML = `
 
     <strong>ID ITEM MAP</strong>
-    <p>${selectedObject.id}</p>
+      <p>${selectedObject.id}</p>
 
     <hr>
 
     <strong>ITEM + SPRITE</strong>
 
     <select
-        id="inspector-sprite"
-        class="editor-input"
+      id="inspector-sprite"
+      class="editor-input"
     >
 
-        ${window.ObjectLibrary.map(
-          (item) => `
-    <option
-        value="${item.sprite}"
-        ${selectedObject.sprite === item.sprite ? "selected" : ""}
-    >
-        ${item.id} - ${item.name}
-    </option>
-    `,
-        ).join("")}
+${window.ObjectLibrary.map(
+  (item) => `
+<option
+    value="${item.sprite}"
+    ${selectedObject.sprite === item.sprite ? "selected" : ""}
+>
+    ${item.id} - ${item.name}
+</option>
+`,
+).join("")}
 
-    </select>
+</select>
 
-    <hr>
+${interactionButton}
 
-    <button
-      id="btn-set-interaction"
-      class="editor-button"
-    >
-      Definir punto interacción
-    </button>
-
-    `;
+`;
 
     bindInspectorEvents();
   }
@@ -1185,7 +1193,6 @@ window.EditorModule = (() => {
   function bindInspectorEvents() {
     const spriteSelect = document.getElementById("inspector-sprite");
     const interactionBtn = document.getElementById("btn-set-interaction");
-
     if (!selectedObject) return;
 
     // ---------------------------------------------------
@@ -1199,12 +1206,12 @@ window.EditorModule = (() => {
           (item) => item.sprite === selectedObject.sprite,
         );
 
-        selectedObject.name = libraryItem.name;
-        selectedObject.description = libraryItem.description ?? "";
-
         if (!libraryItem) return;
 
         // hereda atributos de los objetos del catálogo
+        selectedObject.name = libraryItem.name;
+        selectedObject.type = libraryItem.type ?? "item";
+        selectedObject.description = libraryItem.description ?? "";
         selectedObject.spriteWidth = libraryItem.defaultSpriteWidth;
         selectedObject.spriteHeight = libraryItem.defaultSpriteHeight;
         selectedObject.hitboxWidth = libraryItem.defaultHitboxWidth;
@@ -1217,8 +1224,7 @@ window.EditorModule = (() => {
         selectedObject.teleportTo = libraryItem.teleportTo ?? null;
         selectedObject.teleportX = libraryItem.teleportX ?? 0;
         selectedObject.teleportY = libraryItem.teleportY ?? 0;
-        selectedObject.teleportDirection =
-          libraryItem.teleportDirection ?? "down";
+        selectedObject.teleportDirection = libraryItem.teleportDirection ?? "down";
         selectedObject.interactionMode = libraryItem.interactionMode ?? "front";
         selectedObject.teleportMode = libraryItem.teleportMode ?? "front";
         selectedObject.interactionTileX = libraryItem.interactionTileX ?? null;
@@ -1350,7 +1356,6 @@ window.EditorModule = (() => {
       obj.interactionMode = libraryItem.interactionMode ?? "front";
 
       obj.teleportMode = libraryItem.teleportMode ?? "front";
-
     });
 
     const data = {
@@ -1495,6 +1500,28 @@ window.EditorModule = (() => {
     rows = data.rows;
     grid = data.walkable;
     editorObjects = data.objects ?? [];
+
+    // --------------------------------------------------
+    // COMPLETAR DATOS DESDE EL CATÁLOGO
+    // --------------------------------------------------
+
+    editorObjects.forEach((obj) => {
+      const libraryItem = window.ObjectLibrary.find(
+        (item) => item.sprite === obj.sprite,
+      );
+
+      if (!libraryItem) {
+        return;
+      }
+
+      obj.type = libraryItem.type ?? "item";
+      obj.type ??= libraryItem.type ?? "item";
+      obj.pickup ??= libraryItem.pickup ?? false;
+      obj.locked ??= libraryItem.locked ?? false;
+      obj.opened ??= libraryItem.opened ?? false;
+      obj.interactionMode ??= libraryItem.interactionMode ?? "front";
+      obj.teleportMode ??= libraryItem.teleportMode ?? "front";
+    });
 
     editorHotspots = data.hotspots ?? [];
 

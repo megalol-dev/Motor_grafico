@@ -42,6 +42,7 @@ window.ObjectLibrary = [
   // ---------------------------------------------
   {
     id: "key",
+    type: "item",
     name: "Llave",
 
     sprite: "001_key.png",
@@ -60,7 +61,7 @@ window.ObjectLibrary = [
   // ---------------------------------------------
   {
     id: "door_main",
-
+    type: "door",
     name: "Puerta principal",
 
     sprite: "002_door_main.png",
@@ -93,7 +94,7 @@ window.ObjectLibrary = [
   // ---------------------------------------------
   {
     id: "door_1_close",
-
+    type: "door",
     name: "Puerta principal - salida",
 
     sprite: "door_1_open.png",
@@ -122,7 +123,6 @@ window.ObjectLibrary = [
   // ---------------------------------------------
   {
     id: "flowerpot",
-
     name: "Maceta",
 
     sprite: "003_flowerpot.png",
