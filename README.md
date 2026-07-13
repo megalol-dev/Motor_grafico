@@ -53,15 +53,17 @@ El objetivo a largo plazo es continuar ampliando tanto el motor como el propio v
 
 ### Editor
 
-(Imagen)
+<h3>Editor</h3>
 
-### Juego
+<p align="center">
+  <img src="img/imgREADME/EditorGame.png" width="900">
+</p>
 
-(Imagen)
+<h3>Juego</h3>
 
-### Inspector
-
-(Imagen)
+<p align="center">
+  <img src="img/imgREADME/Game.png" width="900">
+</p>
 
 ---
 
