@@ -496,6 +496,19 @@ El navegador abrirá automáticamente la aplicación y ya podrás acceder tanto 
 
 ---
 
+# 📫 Contacto
+
+📧 Email: **escuderopolojoseluis@gmail.com**
+
+🌐 Portfolio: https://megalol-dev.github.io/
+
+💼 LinkedIn: https://linkedin.com/in/jose-luis-escudero-polo
+
+📺 YouTube: https://www.youtube.com/@Megalol-dev
+
+---
+
+
 ## 📄 Licencia
 
 Este proyecto ha sido desarrollado con fines **educativos, de investigación y como parte de un porfolio personal**.
