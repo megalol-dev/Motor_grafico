@@ -57,7 +57,8 @@ window.ObjectLibrary = [
   },
 
   // ---------------------------------------------
-  // Door - PUERTA PRINCIPAL - map 1
+  // Door 0 - PUERTA PRINCIPAL - map 1
+  // Estado Inicial -> CERRADO
   // ---------------------------------------------
   {
     id: "door_main",
@@ -84,13 +85,14 @@ window.ObjectLibrary = [
     teleportMode: "inside",
 
     teleportTo: "map2",
-    teleportX: 5,
+    teleportX: 3,
     teleportY: 4,
     teleportDirection: "right",
   },
 
   // ---------------------------------------------
-  // Door - PUERTA PRINCIPAL / Salida - map 2
+  // Door 1 - PUERTA PRINCIPAL / Salida - map 2
+  // Estado Inicial -> ABIERTO
   // ---------------------------------------------
   {
     id: "door_1_close",
@@ -114,12 +116,252 @@ window.ObjectLibrary = [
 
     teleportTo: "map1",
     teleportX: 8,
+    teleportY: 3,
+    teleportDirection: "down",
+  },
+
+  // ---------------------------------------------
+  // Door 2 - Cuarto de estar / Entrada - map 3
+  // Estado Inicial -> Cerrado
+  // ---------------------------------------------
+  {
+    id: "door_2_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_2_close.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map3",
+    teleportX: 3,
+    teleportY: 4,
+    teleportDirection: "right",
+  },
+
+  // ---------------------------------------------
+  // Door 3 - Cuarto de estar / Salida - map 2
+  // Estado Inicial -> abierto
+  // ---------------------------------------------
+  {
+    id: "door_3_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_3_open.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map2",
+    teleportX: 28,
+    teleportY: 4,
+    teleportDirection: "left",
+  },
+
+  // ---------------------------------------------
+  // Door 4 - Trastero / Entrada - map 3
+  // Estado Inicial -> cerrado
+  // ---------------------------------------------
+  {
+    id: "door_4_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_4_close.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map4",
+    teleportX: 7,
     teleportY: 4,
     teleportDirection: "down",
   },
 
   // ---------------------------------------------
-  // MACETA
+  // Door 5 - Trastero / Salida - map 4
+  // Estado Inicial -> abierto
+  // ---------------------------------------------
+  {
+    id: "door_5_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_5_open.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map2",
+    teleportX: 7,
+    teleportY: 4,
+    teleportDirection: "down",
+  },
+
+  // ---------------------------------------------
+  // Door 6 - Cocina / Entrada - map 2
+  // Estado Inicial -> cerrado
+  // ---------------------------------------------
+  {
+    id: "door_6_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_6_close.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map5",
+    teleportX: 7,
+    teleportY: 4,
+    teleportDirection: "down",
+  },
+
+  // ---------------------------------------------
+  // Door 7 - Cocina / Salida - map 5
+  // Estado Inicial -> abierto
+  // ---------------------------------------------
+  {
+    id: "door_7_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_7_open.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map2",
+    teleportX: 19,
+    teleportY: 4,
+    teleportDirection: "down",
+  },
+
+  // ---------------------------------------------
+  // Door 8 - Patio Esterior / Entrada - map 5
+  // Estado Inicial -> cerrado
+  // ---------------------------------------------
+  {
+    id: "door_8_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_8_close.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map6",
+    teleportX: 8,
+    teleportY: 3,
+    teleportDirection: "down",
+  },
+
+  // ---------------------------------------------
+  // Door 9 - Patio Exterior / Salida - map 6
+  // Estado Inicial -> abierto
+  // ---------------------------------------------
+  {
+    id: "door_9_close",
+    type: "door",
+    name: "Puerta",
+
+    sprite: "door_9_open.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: true,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map5",
+    teleportX: 26,
+    teleportY: 4,
+    teleportDirection: "down",
+  },
+
+  // ---------------------------------------------
+  // Objetos de la aventura ejemplo
   // ---------------------------------------------
   {
     id: "flowerpot",
