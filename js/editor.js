@@ -43,13 +43,19 @@ window.EditorModule = (() => {
   let selectedHotspot = null;
 
   // -------------------------------------------------------
+  // PORTAL DE PUERTAS
+  // -------------------------------------------------------
+  let drawingPortal = false;
+  let portalStart = null;
+  let portalPreview = null;
+
+  // -------------------------------------------------------
   // SELECCIÓN DE OBJETOS
   // -------------------------------------------------------
   let selectedObject = null;
   let draggingObject = false;
 
   let draggingHotspot = false;
-  let settingInteractionPoint = false;
 
   let hotspotOffsetX = 0;
   let hotspotOffsetY = 0;
@@ -288,25 +294,21 @@ window.EditorModule = (() => {
     if (canvas && !canvas.dataset.bound) {
       canvas.addEventListener("mousedown", (e) => {
         // ---------------------------------------------------
-        // DEFINIR PUNTO DE INTERACCIÓN
+        // EMPEZAR A DIBUJAR PORTAL
         // ---------------------------------------------------
 
-        if (settingInteractionPoint && selectedObject) {
+        if (drawingPortal && selectedObject) {
           const point = getCanvasPoint(e);
 
-          const col = Math.floor(point.x / TILE_W);
+          portalStart = point;
 
-          const row = Math.floor(point.y / TILE_H);
+          portalPreview = {
+            x: point.x,
+            y: point.y,
 
-          selectedObject.interactionTileX = col;
-
-          selectedObject.interactionTileY = row;
-
-          settingInteractionPoint = false;
-
-          updateInspector();
-
-          draw();
+            width: 0,
+            height: 0,
+          };
 
           return;
         }
@@ -364,6 +366,27 @@ window.EditorModule = (() => {
 
       canvas.addEventListener("mousemove", (e) => {
         // ---------------------------------------------------
+        // PREVISUALIZAR PORTAL
+        // ---------------------------------------------------
+
+        if (drawingPortal && portalStart) {
+          const point = getCanvasPoint(e);
+
+          portalPreview = {
+            x: Math.min(point.x, portalStart.x),
+
+            y: Math.min(point.y, portalStart.y),
+
+            width: Math.abs(point.x - portalStart.x),
+
+            height: Math.abs(point.y - portalStart.y),
+          };
+
+          draw();
+
+          return;
+        }
+        // ---------------------------------------------------
         // ACTUALIZAR RECTÁNGULO DEL HOTSPOT
         // ---------------------------------------------------
         if (
@@ -418,6 +441,31 @@ window.EditorModule = (() => {
       });
 
       window.addEventListener("mouseup", () => {
+        // ---------------------------------------------------
+        // TERMINAR PORTAL
+        // ---------------------------------------------------
+
+        if (drawingPortal && portalPreview && selectedObject) {
+          selectedObject.portal = {
+            x: portalPreview.x,
+
+            y: portalPreview.y,
+
+            width: portalPreview.width,
+
+            height: portalPreview.height,
+          };
+
+          drawingPortal = false;
+
+          portalStart = null;
+
+          portalPreview = null;
+
+          updateInspector();
+
+          draw();
+        }
         // ---------------------------------------------------
         // TERMINAR CREACIÓN DEL HOTSPOT
         // ---------------------------------------------------
@@ -704,6 +752,12 @@ window.EditorModule = (() => {
 
       openSprite: libraryItem.openSprite ?? null,
 
+      closedSprite: libraryItem.closedSprite ?? null,
+
+      doorPair: libraryItem.doorPair ?? null,
+
+      typeId: libraryItem.id,
+
       teleportTo: libraryItem.teleportTo ?? null,
       teleportX: libraryItem.teleportX ?? 0,
       teleportY: libraryItem.teleportY ?? 0,
@@ -713,6 +767,13 @@ window.EditorModule = (() => {
 
       interactionTileX: null,
       interactionTileY: null,
+
+      portal: {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+      },
     };
 
     editorObjects.push(obj);
@@ -747,7 +808,10 @@ window.EditorModule = (() => {
     // HOTSPOT QUE SE ESTÁ DIBUJANDO
     // ------------------------------------------
 
+
     drawHotspotPreview();
+
+    drawPortalPreview();
 
     if (showGrid) {
       drawGrid();
@@ -788,33 +852,37 @@ window.EditorModule = (() => {
       // --------------------------------------------
       if (sprite) {
         ctx.drawImage(sprite, obj.x, obj.y, obj.spriteWidth, obj.spriteHeight);
-      }
+        // --------------------------------------------
+        // PORTAL
+        // --------------------------------------------
 
-      // --------------------------------------------
-      // PUNTO DE INTERACCIÓN
-      // --------------------------------------------
+        if (obj.portal && obj.portal.width > 0 && obj.portal.height > 0) {
+          ctx.fillStyle = "rgba(255,0,180,0.25)";
 
-      if (
-        Number.isInteger(obj.interactionTileX) &&
-        Number.isInteger(obj.interactionTileY)
-      ) {
-        const x = obj.interactionTileX * TILE_W + TILE_W / 2;
+ctx.strokeStyle = "#ff00b4";
 
-        const y = obj.interactionTileY * TILE_H + TILE_H / 2;
+          ctx.lineWidth = 2;
 
-        ctx.strokeStyle = "#ff0000";
+          ctx.fillRect(
+            obj.portal.x,
 
-        ctx.lineWidth = 2;
+            obj.portal.y,
 
-        ctx.beginPath();
-        ctx.moveTo(x - 6, y - 6);
-        ctx.lineTo(x + 6, y + 6);
-        ctx.stroke();
+            obj.portal.width,
 
-        ctx.beginPath();
-        ctx.moveTo(x + 6, y - 6);
-        ctx.lineTo(x - 6, y + 6);
-        ctx.stroke();
+            obj.portal.height,
+          );
+
+          ctx.strokeRect(
+            obj.portal.x,
+
+            obj.portal.y,
+
+            obj.portal.width,
+
+            obj.portal.height,
+          );
+        }
       }
 
       // --------------------------------------------
@@ -841,28 +909,29 @@ window.EditorModule = (() => {
   // -------------------------------------------------------
   // DIBUJAR HOTSPOTS
   // -------------------------------------------------------
-  function drawEditorHotspots() {
-    ctx.save();
+function drawEditorHotspots() {
+  ctx.save();
 
-    editorHotspots.forEach((hotspot) => {
-      // color
-      if (hotspot === selectedHotspot) {
-        ctx.fillStyle = "rgba(0,255,255,0.35)";
-        ctx.strokeStyle = "#00ffff";
-      } else {
-        ctx.fillStyle = "rgba(255,255,0,0.25)";
-        ctx.strokeStyle = "#ffff00";
-      }
+  editorHotspots.forEach((hotspot) => {
+    if (hotspot === selectedHotspot) {
+      // Hotspot seleccionado
+      ctx.fillStyle = "rgba(0,255,255,0.35)";
+      ctx.strokeStyle = "#00ffff";
+    } else {
+      // Hotspots existentes
+      ctx.fillStyle = "rgba(0,180,255,0.22)";
+      ctx.strokeStyle = "#00d8ff";
+    }
 
-      ctx.lineWidth = 2;
+    ctx.lineWidth = 2;
 
-      ctx.fillRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
+    ctx.fillRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
 
-      ctx.strokeRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
-    });
+    ctx.strokeRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
+  });
 
-    ctx.restore();
-  }
+  ctx.restore();
+}
 
   // -------------------------------------------------------
   // PREVISUALIZACIÓN DEL HOTSPOT
@@ -897,6 +966,38 @@ window.EditorModule = (() => {
       hotspotPreview.width,
 
       hotspotPreview.height,
+    );
+
+    ctx.restore();
+  }
+
+  // -------------------------------------------------------
+  // PREVISUALIZACIÓN DEL PORTAL
+  // -------------------------------------------------------
+
+  function drawPortalPreview() {
+    if (!portalPreview) return;
+
+    ctx.save();
+
+    ctx.fillStyle = "rgba(255,0,180,0.25)";
+
+    ctx.strokeStyle = "#ff00b4";
+
+    ctx.lineWidth = 2;
+
+    ctx.fillRect(
+      portalPreview.x,
+      portalPreview.y,
+      portalPreview.width,
+      portalPreview.height,
+    );
+
+    ctx.strokeRect(
+      portalPreview.x,
+      portalPreview.y,
+      portalPreview.width,
+      portalPreview.height,
     );
 
     ctx.restore();
@@ -1151,7 +1252,7 @@ window.EditorModule = (() => {
             id="btn-set-interaction"
             class="editor-button"
           >
-            Definir punto interacción
+            Definir zona portal
           </button>
           `
         : "";
@@ -1206,6 +1307,13 @@ ${interactionButton}
           (item) => item.sprite === selectedObject.sprite,
         );
 
+        selectedObject.typeId = libraryItem.id;
+        selectedObject.doorPair = libraryItem.doorPair ?? null;
+        selectedObject.closedSprite = libraryItem.closedSprite ?? null;
+        selectedObject.requiredItem = libraryItem.requiredItem ?? null;
+        selectedObject.locked = libraryItem.locked ?? false;
+        selectedObject.opened = libraryItem.opened ?? false;
+
         if (!libraryItem) return;
 
         // hereda atributos de los objetos del catálogo
@@ -1221,10 +1329,14 @@ ${interactionButton}
         selectedObject.opened = libraryItem.opened ?? false;
         selectedObject.requiredItem = libraryItem.requiredItem ?? null;
         selectedObject.openSprite = libraryItem.openSprite ?? null;
+        selectedObject.closedSprite = libraryItem.closedSprite ?? null;
+        selectedObject.doorPair = libraryItem.doorPair ?? null;
+        selectedObject.typeId = libraryItem.id;
         selectedObject.teleportTo = libraryItem.teleportTo ?? null;
         selectedObject.teleportX = libraryItem.teleportX ?? 0;
         selectedObject.teleportY = libraryItem.teleportY ?? 0;
-        selectedObject.teleportDirection = libraryItem.teleportDirection ?? "down";
+        selectedObject.teleportDirection =
+          libraryItem.teleportDirection ?? "down";
         selectedObject.interactionMode = libraryItem.interactionMode ?? "front";
         selectedObject.teleportMode = libraryItem.teleportMode ?? "front";
         selectedObject.interactionTileX = libraryItem.interactionTileX ?? null;
@@ -1245,9 +1357,9 @@ ${interactionButton}
 
     if (interactionBtn) {
       interactionBtn.addEventListener("click", () => {
-        settingInteractionPoint = true;
+        drawingPortal = true;
 
-        interactionBtn.textContent = "Haz click en el mapa...";
+        interactionBtn.textContent = "Arrastra para crear portal";
       });
     }
   }
@@ -1317,7 +1429,7 @@ ${interactionButton}
     // -------------------------------------------------------
     editorObjects.forEach((obj) => {
       const libraryItem = window.ObjectLibrary.find(
-        (item) => item.sprite === obj.sprite,
+        (item) => item.id === obj.typeId,
       );
 
       if (!libraryItem) {
@@ -1326,35 +1438,29 @@ ${interactionButton}
 
       obj.name = libraryItem.name;
       obj.description = libraryItem.description ?? "";
-
       obj.spriteWidth = libraryItem.defaultSpriteWidth;
-
       obj.spriteHeight = libraryItem.defaultSpriteHeight;
-
       obj.hitboxWidth = libraryItem.defaultHitboxWidth;
-
       obj.hitboxHeight = libraryItem.defaultHitboxHeight;
-
       obj.pickup = libraryItem.pickup ?? false;
-
       obj.locked = libraryItem.locked ?? false;
-
       obj.opened = libraryItem.opened ?? false;
-
       obj.requiredItem = libraryItem.requiredItem ?? null;
-
       obj.openSprite = libraryItem.openSprite ?? null;
-
+      obj.closedSprite = libraryItem.closedSprite ?? null;
+      obj.doorPair = libraryItem.doorPair ?? null;
+      obj.typeId = libraryItem.id;
+      obj.type = libraryItem.type ?? "item";
+      obj.sprite = libraryItem.sprite;
+      obj.name = libraryItem.name;
+      obj.requiredItem = libraryItem.requiredItem ?? null;
+      obj.locked = libraryItem.locked ?? false;
+      obj.opened = libraryItem.opened ?? false;
       obj.teleportTo = libraryItem.teleportTo ?? null;
-
       obj.teleportX = libraryItem.teleportX ?? 0;
-
       obj.teleportY = libraryItem.teleportY ?? 0;
-
       obj.teleportDirection = libraryItem.teleportDirection ?? "down";
-
       obj.interactionMode = libraryItem.interactionMode ?? "front";
-
       obj.teleportMode = libraryItem.teleportMode ?? "front";
     });
 
@@ -1506,21 +1612,50 @@ ${interactionButton}
     // --------------------------------------------------
 
     editorObjects.forEach((obj) => {
-      const libraryItem = window.ObjectLibrary.find(
-        (item) => item.sprite === obj.sprite,
-      );
+      const libraryItem = window.ObjectLibrary.find((item) => {
+        // Mapas nuevos
+        if (obj.typeId) {
+          return item.id === obj.typeId;
+        }
+
+        // Compatibilidad con mapas antiguos
+        return item.sprite === obj.sprite;
+      });
+
+      console.log(obj.sprite, libraryItem);
 
       if (!libraryItem) {
         return;
       }
 
-      obj.type = libraryItem.type ?? "item";
+      obj.typeId ??= libraryItem.id;
+
       obj.type ??= libraryItem.type ?? "item";
+
       obj.pickup ??= libraryItem.pickup ?? false;
+
       obj.locked ??= libraryItem.locked ?? false;
+
       obj.opened ??= libraryItem.opened ?? false;
+
+      obj.requiredItem ??= libraryItem.requiredItem ?? null;
+
+      obj.closedSprite ??= libraryItem.closedSprite ?? null;
+
+      obj.openSprite ??= libraryItem.openSprite ?? null;
+
+      obj.doorPair ??= libraryItem.doorPair ?? null;
+
       obj.interactionMode ??= libraryItem.interactionMode ?? "front";
+
       obj.teleportMode ??= libraryItem.teleportMode ?? "front";
+
+      obj.portal ??= {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+      };
     });
 
     editorHotspots = data.hotspots ?? [];

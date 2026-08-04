@@ -162,6 +162,36 @@ Esto evita duplicar información y facilita enormemente el mantenimiento del pro
 
 ---
 
+## Sistema de puertas
+
+El motor incorpora un sistema de puertas completamente basado en datos.
+
+Cada puerta se define una única vez dentro del catálogo de objetos (`catalogs/objects.js`) indicando todas sus propiedades: sprite, tamaño, hitbox, estado inicial, teletransporte y comportamiento.
+
+Las puertas que representan ambos lados de un mismo acceso comparten un identificador común denominado `doorPair`.
+
+Ejemplo:
+
+```text
+door_pair_1
+```
+
+Gracias a este identificador, ambas puertas permanecen sincronizadas automáticamente durante toda la partida.
+
+Esto permite que acciones como abrir una puerta desde un mapa actualicen inmediatamente su estado en el mapa conectado, evitando tener que duplicar lógica para cada escena.
+
+Actualmente el sistema permite:
+
+- Puertas bloqueadas mediante llave.
+- Puertas que pueden abrirse mediante el verbo **Abrir**.
+- Sincronización automática entre ambos lados de una misma puerta.
+- Persistencia del estado entre mapas.
+- Teletransporte completamente integrado con el editor.
+
+Toda la información de las puertas se obtiene desde el catálogo de objetos, mientras que cada mapa únicamente almacena las instancias colocadas mediante el editor visual.
+
+---
+
 ## Motor del juego
 
 Toda la lógica del gameplay se encuentra actualmente centralizada principalmente en **game.js**.

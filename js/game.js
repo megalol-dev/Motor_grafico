@@ -194,7 +194,7 @@ window.GameModule = (() => {
   async function init() {
     canvas = document.getElementById("game-canvas");
     actionLine = document.getElementById("action-line");
-    verbButtons = document.querySelectorAll(".verb-btn");
+    createVerbButtons();
 
     if (!canvas) return;
 
@@ -204,6 +204,33 @@ window.GameModule = (() => {
     bindGameEvents();
     await loadGameAssets();
     render();
+  }
+
+  // -------------------------------------------------------
+  // CREA LOS BOTONES DE VERBOS DESDE EL CATÁLOGO
+  // -------------------------------------------------------
+  function createVerbButtons() {
+    const verbsPanel = document.getElementById("verbs-panel");
+
+    if (!verbsPanel) {
+      return;
+    }
+
+    verbsPanel.innerHTML = "";
+
+    window.VerbLibrary.forEach((verb) => {
+      const button = document.createElement("button");
+
+      button.className = "verb-btn";
+
+      button.dataset.verb = verb.id;
+
+      button.textContent = verb.label;
+
+      verbsPanel.appendChild(button);
+    });
+
+    verbButtons = verbsPanel.querySelectorAll(".verb-btn");
   }
 
   // -------------------------------------------------------
@@ -240,7 +267,35 @@ window.GameModule = (() => {
     state.companions[0].sprite = `pj${savedParty[1]}`;
     state.companions[1].sprite = `pj${savedParty[2]}`;
 
+    updatePartyButtons();
+
     state.activeCharacter = "slot1";
+  }
+
+  // -------------------------------------------------------
+  // ACTUALIZA LOS NOMBRES DE LOS BOTONES DE PERSONAJES
+  // -------------------------------------------------------
+  function updatePartyButtons() {
+    const descriptions = {
+      1: { name: "Alex" },
+      2: { name: "Luna" },
+      3: { name: "Rex" },
+      4: { name: "Victor" },
+      5: { name: "Neo" },
+      6: { name: "Sara" },
+    };
+
+    const savedParty = JSON.parse(localStorage.getItem("selectedParty"));
+
+    if (!savedParty) return;
+
+    const buttons = document.querySelectorAll(".player-btn");
+
+    buttons.forEach((button, index) => {
+      const id = savedParty[index];
+
+      button.textContent = descriptions[id].name;
+    });
   }
 
   // -------------------------------------------------------
@@ -339,10 +394,90 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // OBTENER ESTADO GLOBAL DE UNA PUERTA
+  // -------------------------------------------------------
+  // -------------------------------------------------------
+  // OBTENER ESTADO GLOBAL DE UNA PUERTA
+  // -------------------------------------------------------
+  function getDoorState(doorPair) {
+    if (!doorPair) {
+      return null;
+    }
+
+    // Seguridad: crear el almacén de puertas si no existe
+    GameState.doors ??= {};
+
+    if (!GameState.doors[doorPair]) {
+      GameState.doors[doorPair] = {
+        opened: false,
+        locked: true,
+      };
+    }
+
+    return GameState.doors[doorPair];
+  }
+
+  // -------------------------------------------------------
+  // SINCRONIZA UNA PUERTA CON SU ESTADO GLOBAL
+  // -------------------------------------------------------
+  function syncDoorState(obj) {
+    if (obj.type !== "door" || !obj.doorPair) {
+      return;
+    }
+
+    const doorState = getDoorState(obj.doorPair);
+
+    obj.opened = doorState.opened;
+    obj.locked = doorState.locked;
+
+    // Cerrada: se interactúa desde delante.
+    // Abierta: se puede entrar en la zona del portal.
+    obj.interactionMode = obj.opened ? (obj.teleportMode ?? "inside") : "front";
+  }
+
+  // -------------------------------------------------------
+  // SINCRONIZAR TODAS LAS PUERTAS DEL MAPA
+  // -------------------------------------------------------
+  function syncAllDoors() {
+    if (!mapData?.objects) {
+      return;
+    }
+
+    mapData.objects.forEach((obj) => {
+      syncDoorState(obj);
+    });
+  }
+
+  // -------------------------------------------------------
+  // CAMBIA EL ESTADO DE UNA PUERTA Y SINCRONIZA EL MAPA
+  // -------------------------------------------------------
+  function setDoorState(doorPair, opened, locked) {
+    if (!doorPair) {
+      return;
+    }
+
+    const doorState = getDoorState(doorPair);
+
+    doorState.opened = opened;
+    doorState.locked = locked;
+
+    syncAllDoors();
+  }
+
+  // -------------------------------------------------------
   // CREA UNA COPIA SERIALIZABLE DE UN VALOR
   // -------------------------------------------------------
   function cloneSerializable(value) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  // -------------------------------------------------------
+  // DEVUELVE EL TEXTO VISIBLE DE UN VERBO
+  // -------------------------------------------------------
+  function getVerbLabel(id) {
+    const verb = window.VerbLibrary.find((v) => v.id === id);
+
+    return verb?.label ?? id;
   }
 
   // -------------------------------------------------------
@@ -363,18 +498,20 @@ window.GameModule = (() => {
   // APLICAR ESTADOS PERSISTENTES A LOS OBJETOS DEL MAPA
   // -------------------------------------------------------
   function applyPersistentObjectStates(mapName) {
-    if (!mapData?.objects) return;
+    if (!mapData?.objects) {
+      return;
+    }
 
-    const savedObjects = GameState.maps[mapName]?.objects;
-
-    if (!savedObjects) return;
+    const savedObjects = GameState.maps[mapName]?.objects ?? {};
 
     mapData.objects.forEach((obj) => {
       const savedObject = savedObjects[obj.id];
 
-      if (!savedObject) return;
+      if (savedObject) {
+        Object.assign(obj, cloneSerializable(savedObject));
+      }
 
-      Object.assign(obj, cloneSerializable(savedObject));
+      syncDoorState(obj);
     });
   }
 
@@ -572,7 +709,7 @@ window.GameModule = (() => {
         state.messageTimeout = null;
 
         if (actionLine) {
-          actionLine.textContent = `${state.currentVerb} ...`;
+          actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
         }
       }
 
@@ -587,7 +724,7 @@ window.GameModule = (() => {
         state.messageTimeout = null;
 
         if (actionLine) {
-          actionLine.textContent = `${state.currentVerb} ...`;
+          actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
         }
       }
 
@@ -701,43 +838,24 @@ window.GameModule = (() => {
         }
 
         // ---------------------------------------------------
-        // OPEN -> CAMINAR HASTA EL OBJETO
+        // OPEN, CLOSE, LOOK...
         // ---------------------------------------------------
-        if (verb === "open") {
-          const interactionTile = findInteractionTileForObject(clickedObject);
 
-          if (!interactionTile) {
-            showTemporaryMessage(
-              `No puedo llegar a ${clickedObject.name}`,
-              2000,
-            );
+        const interactionTile = findInteractionTileForObject(clickedObject);
 
-            return;
-          }
-
-          if (!createPathToTile(interactionTile.col, interactionTile.row)) {
-            showTemporaryMessage("No encuentro un camino.", 2000);
-
-            return;
-          }
-
-          state.pendingInteraction = clickedObject;
-
-          const dx = state.target.x - state.player.x;
-          const dy = state.target.y - state.player.y;
-
-          updateDirectionFromVector(dx, dy);
-
+        if (!interactionTile) {
+          handleObjectInteraction(clickedObject);
           return;
         }
 
-        // ---------------------------------------------------
-        // RESTO DE VERBOS
-        // ---------------------------------------------------
-        showTemporaryMessage(
-          `${state.currentVerb} ${clickedObject.name}`,
-          2000,
-        );
+        if (!createPathToTile(interactionTile.col, interactionTile.row)) {
+          showTemporaryMessage("No encuentro un camino.", 2000);
+          return;
+        }
+
+        state.pendingInteraction = clickedObject;
+
+        return;
 
         return;
       }
@@ -811,7 +929,7 @@ window.GameModule = (() => {
         state.currentVerb = "Walk to";
 
         if (actionLine) {
-          actionLine.textContent = `${state.currentVerb} ...`;
+          actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
         }
       }
     });
@@ -884,9 +1002,9 @@ window.GameModule = (() => {
           state.selectedInventoryItem
         ) {
           actionLine.textContent = `Use ${state.selectedInventoryItem.name} with...`;
-        } else {
-          actionLine.textContent = `${state.currentVerb} ...`;
         }
+      } else {
+        actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
       }
     });
 
@@ -895,15 +1013,23 @@ window.GameModule = (() => {
     // ---------------------------------------------------
     verbButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        state.currentVerb = button.textContent.trim();
+        const verb = window.VerbLibrary.find(
+          (v) => v.id === button.dataset.verb,
+        );
 
-        if (state.currentVerb.toLowerCase() !== "use") {
+        if (!verb) {
+          return;
+        }
+
+        state.currentVerb = verb.id;
+
+        if (state.currentVerb !== "use") {
           state.selectedInventoryItem = null;
           refreshInventoryUI();
         }
 
         if (actionLine) {
-          actionLine.textContent = `${state.currentVerb} ...`;
+          actionLine.textContent = `${verb.label} ...`;
         }
       });
     });
@@ -974,16 +1100,67 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // COMPRUEBA SI UNA CASILLA ESTÁ BLOQUEADA POR UN OBJETO
+  // -------------------------------------------------------
+  function isTileBlockedByObject(col, row) {
+    if (!mapData?.objects) {
+      return false;
+    }
+
+    const tileW = mapData.tileWidth;
+    const tileH = mapData.tileHeight;
+
+    // Centro de la casilla que A* quiere utilizar
+    const tileCenterX = col * tileW + tileW / 2;
+    const tileFootY = (row + 1) * tileH;
+
+    for (const obj of mapData.objects) {
+      if (obj.type !== "door") {
+        continue;
+      }
+
+      // Una puerta abierta deja de bloquear el camino
+      if (obj.opened) {
+        continue;
+      }
+
+      const inside =
+        tileCenterX >= obj.x &&
+        tileCenterX <= obj.x + obj.hitboxWidth &&
+        tileFootY >= obj.y &&
+        tileFootY <= obj.y + obj.hitboxHeight;
+
+      if (inside) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // -------------------------------------------------------
   // COMPRUEBA SI UNA CELDA ES CAMINABLE
   // -------------------------------------------------------
   function isWalkableTile(col, row) {
-    if (!mapData?.walkable) return false;
+    if (!mapData?.walkable) {
+      return false;
+    }
 
     if (row < 0 || col < 0 || row >= mapData.rows || col >= mapData.cols) {
       return false;
     }
 
-    return mapData.walkable[row]?.[col] === 1;
+    // La física fija del mapa bloquea la casilla
+    if (mapData.walkable[row]?.[col] !== 1) {
+      return false;
+    }
+
+    // Una puerta cerrada bloquea dinámicamente la casilla
+    if (isTileBlockedByObject(col, row)) {
+      return false;
+    }
+
+    return true;
   }
 
   // -------------------------------------------------------
@@ -1322,7 +1499,26 @@ window.GameModule = (() => {
     }
 
     updatePlayerAnimation(delta);
+    checkTeleportTrigger();
     updateCamera();
+  }
+
+  // -------------------------------------------------------
+  // COMPRUEBA SI EL PERSONAJE ESTÁ PISANDO UN PORTAL
+  // -------------------------------------------------------
+  function checkTeleportTrigger() {
+    const portal = getTeleportUnderPlayer();
+
+    if (!portal) {
+      return;
+    }
+
+    changeMap(
+      portal.teleportTo,
+      portal.teleportX,
+      portal.teleportY,
+      portal.teleportDirection ?? "down",
+    );
   }
 
   // -------------------------------------------------------
@@ -1359,8 +1555,7 @@ window.GameModule = (() => {
     const oldY = player.y;
 
     // movimiento libre actual
-    player.x = nextX;
-    player.y = nextY;
+    tryMovePlayer(nextX, nextY);
 
     const movedDistance = Math.hypot(player.x - oldX, player.y - oldY);
 
@@ -1540,12 +1735,7 @@ window.GameModule = (() => {
     // MOVIMIENTO
     // ---------------------------------------------------
 
-    /*
-        tryMovePlayer(nextX, nextY);
-        */
-
-    player.x = nextX;
-    player.y = nextY;
+    tryMovePlayer(nextX, nextY);
 
     const movedDistance = Math.hypot(player.x - oldX, player.y - oldY);
 
@@ -1566,12 +1756,14 @@ window.GameModule = (() => {
   // INTENTA MOVER AL JUGADOR USANDO LA MATRIZ WALKABLE
   // -------------------------------------------------------
   function tryMovePlayer(nextX, nextY) {
-    if (canStandAt(nextX, state.player.y)) {
-      state.player.x = nextX;
+    const player = getActiveCharacter();
+
+    if (canStandAt(nextX, player.y)) {
+      player.x = nextX;
     }
 
-    if (canStandAt(state.player.x, nextY)) {
-      state.player.y = nextY;
+    if (canStandAt(player.x, nextY)) {
+      player.y = nextY;
     }
   }
 
@@ -1594,7 +1786,44 @@ window.GameModule = (() => {
       return false;
     }
 
-    return mapData.walkable[row]?.[col] === 1;
+    if (mapData.walkable[row]?.[col] !== 1) {
+      return false;
+    }
+
+    if (isBlockedByObject(worldX, worldY)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function isBlockedByObject(worldX, worldY) {
+    if (!mapData?.objects) {
+      return false;
+    }
+
+    for (const obj of mapData.objects) {
+      if (obj.type !== "door") {
+        continue;
+      }
+
+      // puerta abierta -> no bloquea
+      if (obj.opened) {
+        continue;
+      }
+
+      const inside =
+        worldX >= obj.x &&
+        worldX <= obj.x + obj.hitboxWidth &&
+        worldY >= obj.y &&
+        worldY <= obj.y + obj.hitboxHeight;
+
+      if (inside) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // -------------------------------------------------------
@@ -2025,6 +2254,11 @@ window.GameModule = (() => {
       if (!obj.visible) return;
       if (obj.collected) return;
 
+      // Una puerta abierta existe, pero su gráfico no se dibuja
+      if (obj.type === "door" && obj.opened) {
+        return;
+      }
+
       const sprite = objectSprites[obj.sprite];
       if (!sprite) return;
 
@@ -2056,11 +2290,29 @@ window.GameModule = (() => {
       if (!obj.visible) continue;
       if (obj.collected) continue;
 
-      const inside =
-        worldX >= obj.x &&
-        worldX <= obj.x + obj.hitboxWidth &&
-        worldY >= obj.y &&
-        worldY <= obj.y + obj.hitboxHeight;
+      let inside = false;
+
+      // -----------------------------------------
+      // PUERTA ABIERTA -> usar PORTAL
+      // -----------------------------------------
+      if (obj.type === "door" && obj.opened && obj.portal) {
+        inside =
+          worldX >= obj.portal.x &&
+          worldX <= obj.portal.x + obj.portal.width &&
+          worldY >= obj.portal.y &&
+          worldY <= obj.portal.y + obj.portal.height;
+      }
+
+      // -----------------------------------------
+      // RESTO -> usar HITBOX
+      // -----------------------------------------
+      else {
+        inside =
+          worldX >= obj.x &&
+          worldX <= obj.x + obj.hitboxWidth &&
+          worldY >= obj.y &&
+          worldY <= obj.y + obj.hitboxHeight;
+      }
 
       if (inside) {
         return obj;
@@ -2098,6 +2350,66 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // DEVUELVE EL PORTAL QUE ESTÁ PISANDO EL PERSONAJE
+  // -------------------------------------------------------
+  function getTeleportUnderPlayer() {
+    if (!mapData?.objects) {
+      return null;
+    }
+
+    const player = getActiveCharacter();
+
+    // pies del personaje
+    const footX = player.x;
+    const footY = player.y - FOOT_OFFSET_Y;
+
+    for (const obj of mapData.objects) {
+      // no es un portal
+      if (!obj.teleportTo) {
+        continue;
+      }
+
+      // puerta cerrada
+      if (!obj.opened) {
+        continue;
+      }
+
+      // -------------------------------------------------
+      // NUEVO SISTEMA
+      // Zona Portal dibujada desde el editor
+      // -------------------------------------------------
+      if (obj.portal) {
+        const insidePortal =
+          footX >= obj.portal.x &&
+          footX <= obj.portal.x + obj.portal.width &&
+          footY >= obj.portal.y &&
+          footY <= obj.portal.y + obj.portal.height;
+
+        if (insidePortal) {
+          return obj;
+        }
+
+        continue;
+      }
+
+      // -------------------------------------------------
+      // Compatibilidad con mapas antiguos
+      // -------------------------------------------------
+      const insideHitbox =
+        footX >= obj.x &&
+        footX <= obj.x + obj.hitboxWidth &&
+        footY >= obj.y &&
+        footY <= obj.y + obj.hitboxHeight;
+
+      if (insideHitbox) {
+        return obj;
+      }
+    }
+
+    return null;
+  }
+
+  // -------------------------------------------------------
   // DEVUELVE LOS DATOS DEL CATÁLOGO DE UN HOTSPOT
   // -------------------------------------------------------
   function getHotspotLibraryItem(hotspot) {
@@ -2116,15 +2428,6 @@ window.GameModule = (() => {
   function handleObjectInteraction(obj) {
     const player = getActiveCharacter();
     const verb = state.currentVerb.toLowerCase();
-
-    // ---------------------------------------------------
-    // PUERTA ABIERTA -> TELETRANSPORTE
-    // ---------------------------------------------------
-    if (obj.opened && obj.teleportTo && verb === "walk to") {
-      state.pendingTeleport = obj;
-
-      return;
-    }
 
     // ---------------------------------------------------
     // WHAT IS
@@ -2164,7 +2467,7 @@ window.GameModule = (() => {
       persistObjectState(obj);
 
       const libraryItem = window.ObjectLibrary.find(
-        (item) => item.sprite === obj.sprite,
+        (item) => item.id === obj.typeId,
       );
 
       state.inventory[state.activeCharacter].push({
@@ -2204,26 +2507,18 @@ window.GameModule = (() => {
         obj.requiredItem &&
         state.selectedInventoryItem.typeId === obj.requiredItem
       ) {
-        obj.locked = false;
-        obj.opened = true;
-        obj.interactionMode = obj.teleportMode ?? "inside";
+        // Abrir y desbloquear toda la pareja de puertas
+        setDoorState(obj.doorPair, true, false);
 
-        if (obj.openSprite) {
-          obj.sprite = obj.openSprite;
-          loadObjectSprite(obj.sprite);
-        } else {
-          obj.visible = false;
-        }
-
-        // Guardar automáticamente todos los cambios de la puerta
+        // Guardar el nuevo estado de esta puerta
         persistObjectState(obj);
 
-        // Deseleccionar objeto del inventario
+        // Dejar de usar la llave
         state.selectedInventoryItem = null;
 
         refreshInventoryUI();
 
-        // Volver al modo normal
+        // Volver al verbo por defecto
         state.currentVerb = "Walk to";
 
         if (actionLine) {
@@ -2248,22 +2543,29 @@ window.GameModule = (() => {
     // ---------------------------------------------------
     // OPEN
     // ---------------------------------------------------
-
-    // ---------------------------------------
-    // PUERTA ABIERTA -> TELETRANSPORTE
-    // ---------------------------------------
     if (verb === "open") {
-      if (obj.locked) {
-        if (actionLine) {
-          actionLine.textContent = `${obj.name} está cerrada con llave.`;
-        }
-
+      if (obj.type !== "door") {
+        actionLine.textContent = `No puedo abrir ${obj.name}.`;
         return;
       }
 
-      if (actionLine) {
-        actionLine.textContent = `Abres ${obj.name}.`;
+      if (obj.opened) {
+        actionLine.textContent = `${obj.name} ya está abierta.`;
+        return;
       }
+
+      // Solo la puerta con llave
+      if (obj.requiredItem) {
+        actionLine.textContent = "Parece que está cerrada con llave.";
+        return;
+      }
+
+      // Puertas normales
+      setDoorState(obj.doorPair, true, false);
+
+      render();
+
+      actionLine.textContent = `${obj.name} se ha abierto.`;
 
       return;
     }
@@ -2272,7 +2574,7 @@ window.GameModule = (() => {
     // RESTO DE VERBOS
     // ---------------------------------------------------
     if (actionLine) {
-      actionLine.textContent = `${state.currentVerb} ${obj.name}`;
+      actionLine.textContent = `${getVerbLabel(state.currentVerb)} ${obj.name}`;
     }
   }
 

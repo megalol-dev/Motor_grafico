@@ -1,38 +1,81 @@
 // =======================================================
-// CATÁLOGO GLOBAL DE OBJETOS DEL JUEGO
+// CATÁLOGO GLOBAL DE OBJETOS
 // =======================================================
 //
-// Este archivo define TODOS los objetos disponibles
-// para el editor y para el motor del juego.
+// Este archivo define todos los objetos disponibles
+// en el motor de la aventura gráfica.
 //
-// Cada objeto actúa como una "plantilla".
-// Cuando el usuario crea un objeto desde el editor,
-// éste copia automáticamente estos valores.
+// Cada objeto actúa como una plantilla.
+// El editor copia estos valores cuando se crea
+// un nuevo objeto sobre un mapa.
 //
-// -------------------------------------------------------
-// PARÁMETROS de los objetos
-// -------------------------------------------------------
-
-// Parametros generales, los tienen todos los objetos
+// Los estados del juego (abierto, recogido, etc.)
+// se almacenan posteriormente en cada mapa y en
+// el GameState durante la partida.
 //
-// id:      Indentificador único.
-// name:    Nombre del objeto en el juego
-// sprite:  Imagen que utiliza el objeto en el juego
+// =======================================================
 
-// defaultSpriteWidth:  Tamaño del spite 1 <puede ser el real del png o no>
-// defaultSpriteHeight: Tamaño del sprite 2 <puede ser el real del png o no>
+// =======================================================
+// PARÁMETROS GENERALES
+// =======================================================
+//
+// id
+// Identificador único del tipo de objeto.
+//
+// type
+// Tipo de objeto ->item <recolectable> door <puerta>
+//
+// name
+// Nombre que verá el jugador.
+//
+// sprite
+// Imagen utilizada por el objeto.
+//
+// defaultSpriteWidth
+// defaultSpriteHeight
+// Tamaño inicial del sprite.
+//
+// defaultHitboxWidth
+// defaultHitboxHeight
+// Tamaño de la zona de colisión.
+//
+// pickup
+// Indica si el objeto puede recogerse.
+//
+// =======================================================
 
-// pickup:  Incia si el objeto se puede recoger o no <true / false>
-
-// Parametrso de puerta, los tienen las puertas
-// locked:  Indica si esta bloqueando el acceso a un camino <true / false>
-// opened:  Indica si esta abierta la puerta y deja pasar <true / false>
-
-// requiredItem:  Indica que necesitas algo para operar, por ejemplo una llave
-// teleportTo:    Indica el mapa al que quieres viajar, ejemplo -> map2
-// teleportX:     Incida la cordenada X del teleporte <fila>
-// teleportY:     Indica la cordandad Y del teleporte <columna>
-// teleportDirection: Indica la dirección en la que aparece el spite del pj -> "right",
+// =======================================================
+// PARÁMETROS DE PUERTAS
+// =======================================================
+//
+// doorPair
+// Identificador compartido entre las dos caras
+// de una misma puerta.
+//
+// locked
+// Indica si la puerta bloquea el paso.
+//
+// opened
+// Estado inicial de la puerta.
+//
+// requiredItem
+// Objeto necesario para abrirla (ej. una llave).
+//
+// interactionMode
+// Desde dónde puede interactuarse con la puerta.
+//
+// teleportMode
+// Desde dónde puede activarse el teletransporte.
+//
+// teleportTo
+// Mapa de destino.
+//
+// teleportX
+// teleportY
+// Posición inicial del jugador en el mapa destino.
+//
+// teleportDirection
+// Dirección inicial del personaje tras el teletransporte.
 //
 // =======================================================
 
@@ -58,15 +101,15 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 0 - PUERTA PRINCIPAL - map 1
-  // Estado Inicial -> CERRADO
   // ---------------------------------------------
   {
-    id: "door_main",
+    id: "door_0",
+    doorPair: "door_pair_1",
+
     type: "door",
     name: "Puerta principal",
 
-    sprite: "002_door_main.png",
-    openSprite: "002_door_main_open.png",
+    sprite: "door_0.png",
 
     defaultSpriteWidth: 50,
     defaultSpriteHeight: 60,
@@ -80,8 +123,8 @@ window.ObjectLibrary = [
     opened: false,
 
     requiredItem: "key",
-    interactionMode: "front",
 
+    interactionMode: "front",
     teleportMode: "inside",
 
     teleportTo: "map2",
@@ -92,14 +135,15 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 1 - PUERTA PRINCIPAL / Salida - map 2
-  // Estado Inicial -> ABIERTO
   // ---------------------------------------------
   {
-    id: "door_1_close",
-    type: "door",
-    name: "Puerta principal - salida",
+    id: "door_1",
+    doorPair: "door_pair_1",
 
-    sprite: "door_1_open.png",
+    type: "door",
+    name: "Puerta principal",
+
+    sprite: "door_1.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -110,7 +154,8 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
+
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -122,14 +167,14 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 2 - Cuarto de estar / Entrada - map 3
-  // Estado Inicial -> Cerrado
   // ---------------------------------------------
   {
-    id: "door_2_close",
+    id: "door_2",
     type: "door",
+    doorPair: "door_pair_2",
     name: "Puerta",
 
-    sprite: "door_2_close.png",
+    sprite: "door_2.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -140,7 +185,8 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
+
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -152,14 +198,15 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 3 - Cuarto de estar / Salida - map 2
-  // Estado Inicial -> abierto
   // ---------------------------------------------
   {
-    id: "door_3_close",
+    id: "door_3",
+    doorPair: "door_pair_2",
+
     type: "door",
     name: "Puerta",
 
-    sprite: "door_3_open.png",
+    sprite: "door_3.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -170,7 +217,8 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
+
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -185,11 +233,13 @@ window.ObjectLibrary = [
   // Estado Inicial -> cerrado
   // ---------------------------------------------
   {
-    id: "door_4_close",
+    id: "door_4",
+    doorPair: "door_pair_3",
+
     type: "door",
     name: "Puerta",
 
-    sprite: "door_4_close.png",
+    sprite: "door_4.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -200,7 +250,7 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -212,14 +262,15 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 5 - Trastero / Salida - map 4
-  // Estado Inicial -> abierto
   // ---------------------------------------------
   {
-    id: "door_5_close",
+    id: "door_5",
+    doorPair: "door_pair_3",
+
     type: "door",
     name: "Puerta",
 
-    sprite: "door_5_open.png",
+    sprite: "door_5.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -230,7 +281,7 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -242,14 +293,15 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 6 - Cocina / Entrada - map 2
-  // Estado Inicial -> cerrado
   // ---------------------------------------------
   {
-    id: "door_6_close",
+    id: "door_6",
+    doorPair: "door_pair_4",
+
     type: "door",
     name: "Puerta",
 
-    sprite: "door_6_close.png",
+    sprite: "door_6.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -260,7 +312,7 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -272,14 +324,15 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 7 - Cocina / Salida - map 5
-  // Estado Inicial -> abierto
   // ---------------------------------------------
   {
-    id: "door_7_close",
+    id: "door_7",
+    doorPair: "door_pair_4",
+
     type: "door",
     name: "Puerta",
 
-    sprite: "door_7_open.png",
+    sprite: "door_7.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -290,7 +343,7 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -302,14 +355,15 @@ window.ObjectLibrary = [
 
   // ---------------------------------------------
   // Door 8 - Patio Esterior / Entrada - map 5
-  // Estado Inicial -> cerrado
   // ---------------------------------------------
   {
-    id: "door_8_close",
+    id: "door_8",
+    doorPair: "door_pair_5",
+
     type: "door",
     name: "Puerta",
 
-    sprite: "door_8_close.png",
+    sprite: "door_8.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -320,7 +374,7 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -335,11 +389,12 @@ window.ObjectLibrary = [
   // Estado Inicial -> abierto
   // ---------------------------------------------
   {
-    id: "door_9_close",
+    id: "door_9",
+    doorPair: "door_pair_5",
     type: "door",
     name: "Puerta",
 
-    sprite: "door_9_open.png",
+    sprite: "door_9.png",
 
     defaultSpriteWidth: 24,
     defaultSpriteHeight: 71,
@@ -350,7 +405,7 @@ window.ObjectLibrary = [
     pickup: false,
 
     locked: true,
-    opened: true,
+    opened: false,
     interactionMode: "inside",
     teleportMode: "inside",
 

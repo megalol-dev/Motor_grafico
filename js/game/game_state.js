@@ -11,11 +11,10 @@
 // GameState guarda los cambios.
 //
 // =======================================================
-
 window.GameState = {
-  //-------------------------------------------------------
-  // Estado de los mapas
-  //-------------------------------------------------------
-
+  // Estados particulares de los objetos de cada mapa
   maps: {},
+
+  // Estados compartidos por las parejas de puertas
+  doors: {},
 };

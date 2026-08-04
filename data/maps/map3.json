@@ -110,7 +110,7 @@
     [
       0,
       0,
-      0,
+      1,
       0,
       0,
       0,
@@ -215,19 +215,19 @@
       "id": "object_1",
       "name": "Puerta",
       "description": "",
-      "x": 49,
-      "y": 79,
+      "x": 48,
+      "y": 78,
       "spriteWidth": 24,
       "spriteHeight": 71,
       "hitboxWidth": 24,
       "hitboxHeight": 71,
       "type": "door",
-      "sprite": "door_3_open.png",
+      "sprite": "door_3.png",
       "visible": true,
       "pickup": false,
       "collected": false,
       "locked": true,
-      "opened": true,
+      "opened": false,
       "requiredItem": null,
       "openSprite": null,
       "teleportTo": "map2",
@@ -236,8 +236,17 @@
       "teleportDirection": "left",
       "interactionMode": "inside",
       "teleportMode": "inside",
-      "interactionTileX": 2,
-      "interactionTileY": 4
+      "interactionTileX": null,
+      "interactionTileY": null,
+      "typeId": "door_3",
+      "doorPair": "door_pair_2",
+      "closedSprite": null,
+      "portal": {
+        "x": 40,
+        "y": 71,
+        "width": 42,
+        "height": 86
+      }
     }
   ],
   "hotspots": []

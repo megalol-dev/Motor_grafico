@@ -237,35 +237,53 @@
       "teleportMode": "front",
       "interactionTileX": null,
       "interactionTileY": null,
-      "type": "item"
+      "type": "item",
+      "portal": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      },
+      "typeId": "key",
+      "closedSprite": null,
+      "doorPair": null
     },
     {
       "id": "object_2",
       "name": "Puerta principal",
       "description": "",
-      "x": 167,
-      "y": 30,
+      "x": 168,
+      "y": 29,
       "spriteWidth": 50,
       "spriteHeight": 60,
       "hitboxWidth": 48,
       "hitboxHeight": 60,
-      "sprite": "002_door_main.png",
+      "type": "door",
+      "sprite": "door_0.png",
       "visible": true,
       "pickup": false,
       "collected": false,
       "locked": true,
       "opened": false,
       "requiredItem": "key",
-      "openSprite": "002_door_main_open.png",
+      "openSprite": null,
+      "closedSprite": null,
+      "doorPair": "door_pair_1",
+      "typeId": "door_0",
       "teleportTo": "map2",
       "teleportX": 3,
       "teleportY": 4,
       "teleportDirection": "right",
       "interactionMode": "front",
       "teleportMode": "inside",
-      "interactionTileX": 8,
-      "interactionTileY": 2,
-      "type": "door"
+      "interactionTileX": null,
+      "interactionTileY": null,
+      "portal": {
+        "x": 161,
+        "y": 14,
+        "width": 64,
+        "height": 91
+      }
     }
   ],
   "hotspots": []

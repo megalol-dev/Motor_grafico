@@ -1,0 +1,28 @@
+Click sobre un objeto
+        │
+        ▼
+¿El objeto requiere acercarse?
+        │
+        ▼
+Calcular casilla de interacción
+        │
+        ▼
+¿Ya estoy en una casilla válida?
+        │
+   ┌────┴────┐
+   │         │
+  Sí        No
+   │         │
+   ▼         ▼
+ Ejecutar   Intentar A*
+ acción        │
+               ▼
+      ¿Existe camino?
+         │
+    ┌────┴────┐
+    │         │
+   Sí        No
+    │         │
+    ▼         ▼
+ Caminar   "No encuentro
+            el camino"

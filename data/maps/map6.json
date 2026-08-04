@@ -222,12 +222,12 @@
       "hitboxWidth": 24,
       "hitboxHeight": 71,
       "type": "door",
-      "sprite": "door_9_open.png",
+      "sprite": "door_9.png",
       "visible": true,
       "pickup": false,
       "collected": false,
       "locked": true,
-      "opened": true,
+      "opened": false,
       "requiredItem": null,
       "openSprite": null,
       "teleportTo": "map5",
@@ -236,8 +236,17 @@
       "teleportDirection": "down",
       "interactionMode": "inside",
       "teleportMode": "inside",
-      "interactionTileX": 8,
-      "interactionTileY": 2
+      "interactionTileX": null,
+      "interactionTileY": null,
+      "typeId": "door_9",
+      "doorPair": "door_pair_5",
+      "closedSprite": null,
+      "portal": {
+        "x": 183,
+        "y": 13,
+        "width": 45,
+        "height": 89
+      }
     }
   ],
   "hotspots": []
