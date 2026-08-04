@@ -1,3 +1,20 @@
+// =======================================================
+// GESTOR DEL INVENTARIO
+// =======================================================
+//
+// Este módulo centraliza toda la lógica relacionada con:
+//
+// - Actualización visual del inventario.
+// - Recogida de objetos.
+// - Gestión de los objetos del inventario.
+//
+// El motor principal (game.js) únicamente llama a este
+// gestor y le proporciona la información necesaria.
+// Este módulo no accede directamente a variables del
+// motor; recibe todos los datos mediante parámetros.
+//
+// =======================================================
+
 // -------------------------------------------------------
 // ACTUALIZA VISUALMENTE EL INVENTARIO HTML <refactor>
 // -------------------------------------------------------
@@ -56,58 +73,55 @@ function refreshInventoryUI(state, actionLine) {
   });
 }
 
-
 // ---------------------------------------------------
 // PICK UP - Nueva función recoger
 // ---------------------------------------------------
 function handlePickUp(obj, state, actionLine, currentMapName) {
-    // El objeto no puede recogerse
-    if (!obj.pickup) {
-      if (actionLine) {
-        actionLine.textContent = `No puedo coger ${obj.name}.`;
-      }
-
-      return;
-    }
-
-    // Ya estaba recogido
-    if (obj.collected) {
-      if (actionLine) {
-        actionLine.textContent = `${obj.name} ya no está aquí.`;
-      }
-
-      return;
-    }
-
-    // Recoger objeto
-    obj.collected = true;
-    obj.visible = false;
-
-    // Guardar automáticamente todos sus cambios
-    DoorManager.persistObjectState(obj, currentMapName);
-
-    const libraryItem = window.ObjectLibrary.find(
-      (item) => item.id === obj.typeId,
-    );
-
-    state.inventory[state.activeCharacter].push({
-      id: obj.id,
-      typeId: libraryItem?.id ?? obj.id,
-      name: obj.name,
-      sprite: obj.sprite,
-      description: obj.description,
-    });
-
-    InventoryManager.refreshInventoryUI(state, actionLine);
-
+  // El objeto no puede recogerse
+  if (!obj.pickup) {
     if (actionLine) {
-      actionLine.textContent = `Has cogido ${obj.name}.`;
+      actionLine.textContent = `No puedo coger ${obj.name}.`;
     }
 
     return;
   }
 
+  // Ya estaba recogido
+  if (obj.collected) {
+    if (actionLine) {
+      actionLine.textContent = `${obj.name} ya no está aquí.`;
+    }
 
+    return;
+  }
+
+  // Recoger objeto
+  obj.collected = true;
+  obj.visible = false;
+
+  // Guardar automáticamente todos sus cambios
+  DoorManager.persistObjectState(obj, currentMapName);
+
+  const libraryItem = window.ObjectLibrary.find(
+    (item) => item.id === obj.typeId,
+  );
+
+  state.inventory[state.activeCharacter].push({
+    id: obj.id,
+    typeId: libraryItem?.id ?? obj.id,
+    name: obj.name,
+    sprite: obj.sprite,
+    description: obj.description,
+  });
+
+  InventoryManager.refreshInventoryUI(state, actionLine);
+
+  if (actionLine) {
+    actionLine.textContent = `Has cogido ${obj.name}.`;
+  }
+
+  return;
+}
 
 window.InventoryManager = {
   refreshInventoryUI,

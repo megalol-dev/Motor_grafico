@@ -249,7 +249,13 @@ window.GameModule = (() => {
       await loadObjectSprites();
 
       placePlayerAtSpawn();
-      centerCameraOnPlayer();
+      CameraManager.centerCameraOnPlayer(
+        getActiveCharacter(),
+        state,
+        canvas,
+        mapData,
+        MAP_SCALE,
+      );
     }
   }
 
@@ -439,7 +445,13 @@ window.GameModule = (() => {
     state.pathIndex = 0;
     state.pendingHotspot = null;
 
-    centerCameraOnPlayer();
+    CameraManager.centerCameraOnPlayer(
+      getActiveCharacter(),
+      state,
+      canvas,
+      mapData,
+      MAP_SCALE,
+    );
     render();
   }
 
@@ -950,12 +962,12 @@ window.GameModule = (() => {
     const worldY = state.camera.y + canvasY / MAP_SCALE;
 
     return {
-      x: clamp(
+      x: CameraManager.clamp(
         worldX,
         state.player.width / 2,
-        getWorldWidth() - state.player.width / 2,
+        CameraManager.getWorldWidth(mapData, canvas) - state.player.width / 2,
       ),
-      y: clamp(worldY, state.player.height, getWorldHeight()),
+      y: CameraManager.clamp(worldY, state.player.height, CameraManager.getWorldHeight(mapData, canvas)),
     };
   }
 
@@ -1360,7 +1372,13 @@ window.GameModule = (() => {
 
     updatePlayerAnimation(delta);
     checkTeleportTrigger();
-    updateCamera();
+    CameraManager.updateCamera(
+      getActiveCharacter(),
+      state,
+      canvas,
+      mapData,
+      MAP_SCALE,
+    );
   }
 
   // -------------------------------------------------------
@@ -1702,9 +1720,6 @@ window.GameModule = (() => {
   // -------------------------------------------------------
   // ANIMACIÓN DEL PERSONAJE
   // -------------------------------------------------------
-  // -------------------------------------------------------
-  // ANIMACIÓN DEL PERSONAJE
-  // -------------------------------------------------------
   function updatePlayerAnimation(delta) {
     const player = getActiveCharacter();
 
@@ -1733,13 +1748,13 @@ window.GameModule = (() => {
     const tileW = mapData.tileWidth;
     const tileH = mapData.tileHeight;
 
-    const spawnCol = clamp(
+    const spawnCol = CameraManager.clamp(
       mapData.spawn?.x ?? Math.max(1, (mapData.cols || 10) - 4),
       0,
       Math.max(0, mapData.cols - 1),
     );
 
-    const spawnRow = clamp(
+    const spawnRow = CameraManager.clamp(
       mapData.spawn?.y ?? Math.max(1, (mapData.rows || 10) - 1),
       0,
       Math.max(0, mapData.rows - 1),
@@ -1756,54 +1771,6 @@ window.GameModule = (() => {
 
     state.companions[1].x = state.player.x + 30;
     state.companions[1].y = state.player.y + 10;
-  }
-
-  // -------------------------------------------------------
-  // CENTRA LA CÁMARA EN EL JUGADOR AL INICIO
-  // -------------------------------------------------------
-  function centerCameraOnPlayer() {
-    const player = getActiveCharacter();
-
-    const viewportWidth = canvas.width / MAP_SCALE;
-    const viewportHeight = canvas.height / MAP_SCALE;
-
-    state.camera.x = clamp(
-      player.x - viewportWidth / 2,
-      0,
-      Math.max(0, getWorldWidth() - viewportWidth),
-    );
-
-    state.camera.y = clamp(
-      player.y - viewportHeight / 2,
-      0,
-      Math.max(0, getWorldHeight() - viewportHeight),
-    );
-  }
-
-  // -------------------------------------------------------
-  // ACTUALIZA LA CÁMARA PARA SEGUIR AL PERSONAJE ACTIVO
-  // -------------------------------------------------------
-  function updateCamera() {
-    const player = getActiveCharacter();
-
-    const viewportWidth = canvas.width / MAP_SCALE;
-    const viewportHeight = canvas.height / MAP_SCALE;
-
-    const targetCameraX = player.x - viewportWidth / 2;
-
-    const targetCameraY = player.y - viewportHeight / 2;
-
-    state.camera.x = clamp(
-      targetCameraX,
-      0,
-      Math.max(0, getWorldWidth() - viewportWidth),
-    );
-
-    state.camera.y = clamp(
-      targetCameraY,
-      0,
-      Math.max(0, getWorldHeight() - viewportHeight),
-    );
   }
 
   // -------------------------------------------------------
@@ -2070,28 +2037,6 @@ window.GameModule = (() => {
     ctx.restore();
   }
 
-  // -------------------------------------------------------
-  // ANCHO TOTAL DEL MUNDO
-  // -------------------------------------------------------
-  function getWorldWidth() {
-    if (!mapData) return canvas.width;
-    return mapData.cols * mapData.tileWidth;
-  }
-
-  // -------------------------------------------------------
-  // ALTO TOTAL DEL MUNDO
-  // -------------------------------------------------------
-  function getWorldHeight() {
-    if (!mapData) return canvas.height;
-    return mapData.rows * mapData.tileHeight;
-  }
-
-  // -------------------------------------------------------
-  // LIMITA UN VALOR ENTRE MIN Y MAX
-  // -------------------------------------------------------
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
 
   // -------------------------------------------------------
   // DEVUELVE EL PERSONAJE ACTIVO
