@@ -203,7 +203,21 @@ window.GameModule = (() => {
 
     bindGameEvents();
     await loadGameAssets();
-    render();
+    RenderManager.render(
+      ctx,
+      canvas,
+      mapImageLoaded,
+      mapImage,
+      state,
+      mapData,
+      objectSprites,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+      getActiveCharacter(),
+    );
   }
 
   // -------------------------------------------------------
@@ -452,7 +466,21 @@ window.GameModule = (() => {
       mapData,
       MAP_SCALE,
     );
-    render();
+    RenderManager.render(
+      ctx,
+      canvas,
+      mapImageLoaded,
+      mapImage,
+      state,
+      mapData,
+      objectSprites,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+      getActiveCharacter(),
+    );
   }
 
   // -------------------------------------------------------
@@ -1261,7 +1289,21 @@ window.GameModule = (() => {
     state.lastTime = timestamp;
 
     update(delta);
-    render();
+    RenderManager.render(
+      ctx,
+      canvas,
+      mapImageLoaded,
+      mapImage,
+      state,
+      mapData,
+      objectSprites,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+      getActiveCharacter(),
+    );
 
     requestAnimationFrame(gameLoop);
   }
@@ -1576,269 +1618,6 @@ window.GameModule = (() => {
     state.companions[1].y = state.player.y + 10;
   }
 
-  // -------------------------------------------------------
-  // RENDER GENERAL
-  // -------------------------------------------------------
-  function render() {
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    drawMap();
-    drawObjects();
-    drawCompanions();
-    drawPlayer();
-  }
-
-  // -------------------------------------------------------
-  // DIBUJA EL MAPA TENIENDO EN CUENTA LA CÁMARA
-  // -------------------------------------------------------
-  function drawMap() {
-    if (mapImageLoaded && mapImage) {
-      ctx.drawImage(
-        mapImage,
-        Math.floor(state.camera.x),
-        Math.floor(state.camera.y),
-        Math.floor(canvas.width / MAP_SCALE),
-        Math.floor(canvas.height / MAP_SCALE),
-        0,
-        0,
-        canvas.width,
-        canvas.height,
-      );
-      return;
-    }
-
-    ctx.fillStyle = "#22c75a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-
-  // -------------------------------------------------------
-  // DIBUJA EL PERSONAJE AJUSTADO A LA CÁMARA
-  // -------------------------------------------------------
-  function drawPlayer() {
-    const p = getActiveCharacter();
-
-    const drawWidth = p.width * PLAYER_SCALE;
-    const drawHeight = p.height * PLAYER_SCALE;
-
-    const screenX = Math.round(
-      (p.x - state.camera.x) * MAP_SCALE - drawWidth / 2,
-    );
-
-    const screenY = Math.round((p.y - state.camera.y) * MAP_SCALE - drawHeight);
-
-    // -------------------------------------------------------
-    // OBTENER EL SPRITE DEL PERSONAJE ACTUAL
-    // -------------------------------------------------------
-    const sprite = playerSprites[p.sprite];
-
-    if (!sprite) {
-      drawFallbackPlayer(screenX, screenY, PLAYER_SCALE);
-      return;
-    }
-
-    const frame = getPlayerFrame();
-
-    ctx.drawImage(
-      sprite,
-      frame.sx,
-      frame.sy,
-      FRAME_WIDTH,
-      FRAME_HEIGHT,
-      screenX,
-      screenY,
-      drawWidth,
-      drawHeight,
-    );
-  }
-
-  // -------------------------------------------------------
-  // DIBUJA LOS PERSONAJES SECUNDARIOS
-  // -------------------------------------------------------
-  function drawCompanions() {
-    const activePlayer = getActiveCharacter();
-
-    state.companions.forEach((companion) => {
-      if (companion.currentMap !== activePlayer.currentMap) {
-        return;
-      }
-      // -------------------------------------------------------
-      // NO DIBUJAR EL PERSONAJE ACTIVO
-      // -------------------------------------------------------
-      if (companion.id === state.activeCharacter) {
-        return;
-      }
-
-      // -------------------------------------------------------
-      // USAR LOS SPRITES YA CARGADOS
-      // -------------------------------------------------------
-      const sprite = playerSprites[companion.sprite];
-
-      if (!sprite) {
-        return;
-      }
-
-      const drawWidth = companion.width * PLAYER_SCALE;
-
-      const drawHeight = companion.height * PLAYER_SCALE;
-
-      const screenX = Math.round(
-        (companion.x - state.camera.x) * MAP_SCALE - drawWidth / 2,
-      );
-
-      const screenY = Math.round(
-        (companion.y - state.camera.y) * MAP_SCALE - drawHeight,
-      );
-
-      const frame = getFrameForCharacter(companion);
-
-      ctx.drawImage(
-        sprite,
-        frame.sx,
-        frame.sy,
-        FRAME_WIDTH,
-        FRAME_HEIGHT,
-        screenX,
-        screenY,
-        drawWidth,
-        drawHeight,
-      );
-    });
-
-    // -------------------------------------------------------
-    // DIBUJAR P1 SI NO ES EL ACTIVO
-    // -------------------------------------------------------
-    if (state.activeCharacter !== "slot1") {
-      const p1 = state.player;
-
-      if (p1.currentMap !== activePlayer.currentMap) {
-        return;
-      }
-
-      const sprite = playerSprites[p1.sprite];
-
-      if (!sprite) return;
-
-      const drawWidth = p1.width * PLAYER_SCALE;
-
-      const drawHeight = p1.height * PLAYER_SCALE;
-
-      const screenX = Math.round(
-        (p1.x - state.camera.x) * MAP_SCALE - drawWidth / 2,
-      );
-
-      const screenY = Math.round(
-        (p1.y - state.camera.y) * MAP_SCALE - drawHeight,
-      );
-
-      const frame = getFrameForCharacter(p1);
-
-      ctx.drawImage(
-        sprite,
-        frame.sx,
-        frame.sy,
-        FRAME_WIDTH,
-        FRAME_HEIGHT,
-        screenX,
-        screenY,
-        drawWidth,
-        drawHeight,
-      );
-    }
-  }
-
-  // -------------------------------------------------------
-  // SELECCIONA EL FRAME CORRECTO DEL SPRITE
-  // -------------------------------------------------------
-  // -------------------------------------------------------
-  // SELECCIONA EL FRAME CORRECTO DEL SPRITE
-  // -------------------------------------------------------
-  function getPlayerFrame() {
-    const player = getActiveCharacter();
-
-    const directionMap = {
-      down: { idleCol: 0, animRow: 1 },
-      up: { idleCol: 1, animRow: 4 },
-      left: { idleCol: 2, animRow: 2 },
-      right: { idleCol: 3, animRow: 3 },
-    };
-
-    const config = directionMap[player.direction] || directionMap.down;
-
-    if (!player.moving) {
-      return {
-        sx: config.idleCol * FRAME_WIDTH,
-        sy: 0,
-      };
-    }
-
-    return {
-      sx: player.animFrame * FRAME_WIDTH,
-      sy: config.animRow * FRAME_HEIGHT,
-    };
-  }
-
-  // -------------------------------------------------------
-  // FRAME PARA CUALQUIER PERSONAJE
-  // -------------------------------------------------------
-  function getFrameForCharacter(character) {
-    const directionMap = {
-      down: { idleCol: 0, animRow: 1 },
-      up: { idleCol: 1, animRow: 4 },
-      left: { idleCol: 2, animRow: 2 },
-      right: { idleCol: 3, animRow: 3 },
-    };
-
-    const config = directionMap[character.direction] || directionMap.down;
-
-    if (!character.moving) {
-      return {
-        sx: config.idleCol * FRAME_WIDTH,
-        sy: 0,
-      };
-    }
-
-    return {
-      sx: character.animFrame * FRAME_WIDTH,
-      sy: config.animRow * FRAME_HEIGHT,
-    };
-  }
-
-  // -------------------------------------------------------
-  // FALLBACK SI EL SPRITE NO CARGA
-  // -------------------------------------------------------
-  function drawFallbackPlayer(x, y, scale = 1) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-
-    ctx.fillStyle = "#1f4fff";
-    ctx.fillRect(4, 18, 16, 20);
-
-    ctx.fillStyle = "#1635c9";
-    ctx.fillRect(5, 38, 5, 18);
-    ctx.fillRect(14, 38, 5, 18);
-
-    ctx.fillStyle = "#f08b6b";
-    ctx.fillRect(5, 2, 14, 14);
-
-    ctx.fillStyle = "#7a2f00";
-    ctx.fillRect(4, 0, 16, 5);
-
-    ctx.fillStyle = "#f08b6b";
-    ctx.fillRect(1, 20, 3, 14);
-    ctx.fillRect(20, 20, 3, 14);
-
-    ctx.fillStyle = "#d9d9d9";
-    ctx.fillRect(8, 20, 8, 12);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(4, 56, 7, 3);
-    ctx.fillRect(13, 56, 7, 3);
-
-    ctx.restore();
-  }
 
   // -------------------------------------------------------
   // DEVUELVE EL PERSONAJE ACTIVO
@@ -2094,7 +1873,21 @@ window.GameModule = (() => {
           actionLine.textContent = `${obj.name} se ha abierto.`;
         }
 
-        render();
+        RenderManager.render(
+          ctx,
+          canvas,
+          mapImageLoaded,
+          mapImage,
+          state,
+          mapData,
+          objectSprites,
+          playerSprites,
+          MAP_SCALE,
+          PLAYER_SCALE,
+          FRAME_WIDTH,
+          FRAME_HEIGHT,
+          getActiveCharacter(),
+        );
 
         return;
       }
@@ -2132,7 +1925,21 @@ window.GameModule = (() => {
       // Puertas normales
       DoorManager.setDoorState(obj.doorPair, true, false, mapData?.objects);
 
-      render();
+      RenderManager.render(
+        ctx,
+        canvas,
+        mapImageLoaded,
+        mapImage,
+        state,
+        mapData,
+        objectSprites,
+        playerSprites,
+        MAP_SCALE,
+        PLAYER_SCALE,
+        FRAME_WIDTH,
+        FRAME_HEIGHT,
+        getActiveCharacter(),
+      );
 
       actionLine.textContent = `${obj.name} se ha abierto.`;
 
