@@ -634,8 +634,16 @@ window.GameModule = (() => {
       // ---------------------------------------------------
       // COMPROBAR SI SE HA CLICADO UN OBJETO
       // ---------------------------------------------------
-      const clickedObject = getObjectAt(worldPoint.x, worldPoint.y);
-      const clickedHotspot = getHotspotAt(worldPoint.x, worldPoint.y);
+      const clickedObject = InteractionManager.getObjectAt(
+        worldPoint.x,
+        worldPoint.y,
+        mapData,
+      );
+      const clickedHotspot = InteractionManager.getHotspotAt(
+        worldPoint.x,
+        worldPoint.y,
+        mapData,
+      );
 
       if (clickedObject) {
         const verb = state.currentVerb.toLowerCase();
@@ -644,7 +652,12 @@ window.GameModule = (() => {
         // WHAT IS -> NO CAMINAR
         // ---------------------------------------------------
         if (verb === "what is") {
-          showTemporaryMessage(clickedObject.description, 2000);
+          InteractionManager.showTemporaryMessage(
+            clickedObject.description,
+            state,
+            actionLine,
+            2000,
+          );
 
           return;
         }
@@ -656,8 +669,10 @@ window.GameModule = (() => {
           const interactionTile = findInteractionTileForObject(clickedObject);
 
           if (!interactionTile) {
-            showTemporaryMessage(
+            InteractionManager.showTemporaryMessage(
               `No puedo llegar a ${clickedObject.name}`,
+              state,
+              actionLine,
               2000,
             );
 
@@ -665,7 +680,12 @@ window.GameModule = (() => {
           }
 
           if (!createPathToTile(interactionTile.col, interactionTile.row)) {
-            showTemporaryMessage("No encuentro un camino.", 2000);
+            InteractionManager.showTemporaryMessage(
+              "No encuentro un camino.",
+              state,
+              actionLine,
+              2000,
+            );
 
             return;
           }
@@ -691,15 +711,23 @@ window.GameModule = (() => {
           const interactionTile = findInteractionTileForObject(clickedObject);
 
           if (!interactionTile) {
-            showTemporaryMessage(
+            InteractionManager.showTemporaryMessage(
               `No puedo llegar a ${clickedObject.name}`,
+              state,
+              actionLine,
               2000,
             );
+
             return;
           }
 
           if (!createPathToTile(interactionTile.col, interactionTile.row)) {
-            showTemporaryMessage("No encuentro un camino.", 2000);
+            InteractionManager.showTemporaryMessage(
+              "No encuentro un camino.",
+              state,
+              actionLine,
+              2000,
+            );
 
             return;
           }
@@ -725,8 +753,10 @@ window.GameModule = (() => {
           const interactionTile = findInteractionTileForObject(clickedObject);
 
           if (!interactionTile) {
-            showTemporaryMessage(
+            InteractionManager.showTemporaryMessage(
               `No puedo llegar a ${clickedObject.name}`,
+              state,
+              actionLine,
               2000,
             );
 
@@ -734,7 +764,12 @@ window.GameModule = (() => {
           }
 
           if (!createPathToTile(interactionTile.col, interactionTile.row)) {
-            showTemporaryMessage("No encuentro un camino.", 2000);
+            InteractionManager.showTemporaryMessage(
+              "No encuentro un camino.",
+              state,
+              actionLine,
+              2000,
+            );
 
             return;
           }
@@ -752,14 +787,38 @@ window.GameModule = (() => {
         const interactionTile = findInteractionTileForObject(clickedObject);
 
         if (!interactionTile) {
-          handleObjectInteraction(clickedObject);
+          InteractionManager.handleObjectInteraction(
+            clickedObject,
+            state,
+            actionLine,
+            currentMapName,
+            mapData,
+            ctx,
+            canvas,
+            mapImageLoaded,
+            mapImage,
+            objectSprites,
+            playerSprites,
+            MAP_SCALE,
+            PLAYER_SCALE,
+            FRAME_WIDTH,
+            FRAME_HEIGHT,
+            getVerbLabel,
+          );
+
           return;
         }
 
-        if (!createPathToTile(interactionTile.col, interactionTile.row)) {
-          showTemporaryMessage("No encuentro un camino.", 2000);
-          return;
-        }
+       if (!createPathToTile(interactionTile.col, interactionTile.row)) {
+         InteractionManager.showTemporaryMessage(
+           "No encuentro un camino.",
+           state,
+           actionLine,
+           2000,
+         );
+
+         return;
+       }
 
         state.pendingInteraction = clickedObject;
 
@@ -778,20 +837,34 @@ window.GameModule = (() => {
         // WHAT IS -> NO CAMINAR
         // ---------------------------------------------------
         if (verb === "what is") {
-          handleHotspotInteraction(clickedHotspot);
+          InteractionManager.handleHotspotInteraction(
+            clickedHotspot,
+            state,
+            actionLine,
+          );
 
           return;
         }
         const interactionTile = findInteractionTileForHotspot(clickedHotspot);
 
         if (!interactionTile) {
-          showTemporaryMessage("No puedo llegar ahí.", 2000);
+          InteractionManager.showTemporaryMessage(
+            "No puedo llegar ahí.",
+            state,
+            actionLine,
+            2000,
+          );
 
           return;
         }
 
         if (!createPathToTile(interactionTile.col, interactionTile.row)) {
-          showTemporaryMessage("No encuentro un camino.", 2000);
+          InteractionManager.showTemporaryMessage(
+            "No encuentro un camino.",
+            state,
+            actionLine,
+            2000,
+          );
 
           return;
         }
@@ -824,11 +897,16 @@ window.GameModule = (() => {
         return;
       }
 
-      if (!createPathToTile(targetTile.col, targetTile.row)) {
-        showTemporaryMessage("No encuentro un camino.", 2000);
+     if (!createPathToTile(targetTile.col, targetTile.row)) {
+       InteractionManager.showTemporaryMessage(
+         "No encuentro un camino.",
+         state,
+         actionLine,
+         2000,
+       );
 
-        return;
-      }
+       return;
+     }
 
       state.pendingInteraction = null;
       state.pendingHotspot = null;
@@ -865,8 +943,16 @@ window.GameModule = (() => {
         return;
       }
 
-      const hoveredObject = getObjectAt(worldPoint.x, worldPoint.y);
-      const hoveredHotspot = getHotspotAt(worldPoint.x, worldPoint.y);
+      const hoveredObject = InteractionManager.getObjectAt(
+        worldPoint.x,
+        worldPoint.y,
+        mapData,
+      );
+      const hoveredHotspot = InteractionManager.getHotspotAt(
+        worldPoint.x,
+        worldPoint.y,
+        mapData,
+      );
 
       // ---------------------------------------------------
       // OBJETO BAJO EL RATÓN
@@ -890,7 +976,8 @@ window.GameModule = (() => {
       // HOTSPOT BAJO EL RATÓN
       // ---------------------------------------------------
       if (hoveredHotspot) {
-        const hotspotItem = getHotspotLibraryItem(hoveredHotspot);
+        const hotspotItem =
+          InteractionManager.getHotspotLibraryItem(hoveredHotspot);
 
         if (hotspotItem && actionLine) {
           if (
@@ -1339,7 +1426,11 @@ window.GameModule = (() => {
   // COMPRUEBA SI EL PERSONAJE ESTÁ PISANDO UN PORTAL
   // -------------------------------------------------------
   function checkTeleportTrigger() {
-    const portal = getTeleportUnderPlayer();
+    const portal = InteractionManager.getTeleportUnderPlayer(
+      getActiveCharacter(),
+      mapData,
+      FOOT_OFFSET_Y,
+    );
 
     if (!portal) {
       return;
@@ -1434,13 +1525,34 @@ window.GameModule = (() => {
         player.moving = false;
 
         if (state.pendingInteraction) {
-          handleObjectInteraction(state.pendingInteraction);
+          InteractionManager.handleObjectInteraction(
+            state.pendingInteraction,
+            state,
+            actionLine,
+            currentMapName,
+            mapData,
+            ctx,
+            canvas,
+            mapImageLoaded,
+            mapImage,
+            objectSprites,
+            playerSprites,
+            MAP_SCALE,
+            PLAYER_SCALE,
+            FRAME_WIDTH,
+            FRAME_HEIGHT,
+            getVerbLabel,
+          );
 
           state.pendingInteraction = null;
         }
 
         if (state.pendingHotspot) {
-          handleHotspotInteraction(state.pendingHotspot);
+          InteractionManager.handleHotspotInteraction(
+            state.pendingHotspot,
+            state,
+            actionLine,
+          );
 
           state.pendingHotspot = null;
         }
@@ -1506,7 +1618,24 @@ window.GameModule = (() => {
 
       // ejecutar interacción pendiente
       if (state.pendingInteraction) {
-        handleObjectInteraction(state.pendingInteraction);
+        InteractionManager.handleObjectInteraction(
+          state.pendingInteraction,
+          state,
+          actionLine,
+          currentMapName,
+          mapData,
+          ctx,
+          canvas,
+          mapImageLoaded,
+          mapImage,
+          objectSprites,
+          playerSprites,
+          MAP_SCALE,
+          PLAYER_SCALE,
+          FRAME_WIDTH,
+          FRAME_HEIGHT,
+          getVerbLabel,
+        );
 
         state.pendingInteraction = null;
       }
@@ -1515,7 +1644,11 @@ window.GameModule = (() => {
       // HOTSPOT
       // ---------------------------------------------------
       if (state.pendingHotspot) {
-        handleHotspotInteraction(state.pendingHotspot);
+        InteractionManager.handleHotspotInteraction(
+          state.pendingHotspot,
+          state,
+          actionLine,
+        );
 
         state.pendingHotspot = null;
       }
@@ -1618,7 +1751,6 @@ window.GameModule = (() => {
     state.companions[1].y = state.player.y + 10;
   }
 
-
   // -------------------------------------------------------
   // DEVUELVE EL PERSONAJE ACTIVO
   // -------------------------------------------------------
@@ -1662,349 +1794,6 @@ window.GameModule = (() => {
       // ---------------------------------------------------
       ctx.drawImage(sprite, screenX, screenY, drawWidth, drawHeight);
     });
-  }
-
-  // -------------------------------------------------------
-  // DEVUELVE EL OBJETO SOBRE EL QUE SE HA HECHO CLICK
-  // -------------------------------------------------------
-  function getObjectAt(worldX, worldY) {
-    if (!mapData?.objects) return null;
-
-    for (let i = mapData.objects.length - 1; i >= 0; i--) {
-      const obj = mapData.objects[i];
-
-      if (!obj.visible) continue;
-      if (obj.collected) continue;
-
-      let inside = false;
-
-      // -----------------------------------------
-      // PUERTA ABIERTA -> usar PORTAL
-      // -----------------------------------------
-      if (obj.type === "door" && obj.opened && obj.portal) {
-        inside =
-          worldX >= obj.portal.x &&
-          worldX <= obj.portal.x + obj.portal.width &&
-          worldY >= obj.portal.y &&
-          worldY <= obj.portal.y + obj.portal.height;
-      }
-
-      // -----------------------------------------
-      // RESTO -> usar HITBOX
-      // -----------------------------------------
-      else {
-        inside =
-          worldX >= obj.x &&
-          worldX <= obj.x + obj.hitboxWidth &&
-          worldY >= obj.y &&
-          worldY <= obj.y + obj.hitboxHeight;
-      }
-
-      if (inside) {
-        return obj;
-      }
-    }
-
-    return null;
-  }
-
-  // -------------------------------------------------------
-  // DEVUELVE EL HOTSPOT SITUADO EN UNA POSICIÓN DEL MAPA
-  // -------------------------------------------------------
-  function getHotspotAt(worldX, worldY) {
-    if (!mapData?.hotspots) {
-      return null;
-    }
-
-    // Recorremos desde el último para respetar el orden
-    // cuando existan varios hotspots superpuestos.
-    for (let i = mapData.hotspots.length - 1; i >= 0; i -= 1) {
-      const hotspot = mapData.hotspots[i];
-
-      const inside =
-        worldX >= hotspot.x &&
-        worldX <= hotspot.x + hotspot.width &&
-        worldY >= hotspot.y &&
-        worldY <= hotspot.y + hotspot.height;
-
-      if (inside) {
-        return hotspot;
-      }
-    }
-
-    return null;
-  }
-
-  // -------------------------------------------------------
-  // DEVUELVE EL PORTAL QUE ESTÁ PISANDO EL PERSONAJE
-  // -------------------------------------------------------
-  function getTeleportUnderPlayer() {
-    if (!mapData?.objects) {
-      return null;
-    }
-
-    const player = getActiveCharacter();
-
-    // pies del personaje
-    const footX = player.x;
-    const footY = player.y - FOOT_OFFSET_Y;
-
-    for (const obj of mapData.objects) {
-      // no es un portal
-      if (!obj.teleportTo) {
-        continue;
-      }
-
-      // puerta cerrada
-      if (!obj.opened) {
-        continue;
-      }
-
-      // -------------------------------------------------
-      // NUEVO SISTEMA
-      // Zona Portal dibujada desde el editor
-      // -------------------------------------------------
-      if (obj.portal) {
-        const insidePortal =
-          footX >= obj.portal.x &&
-          footX <= obj.portal.x + obj.portal.width &&
-          footY >= obj.portal.y &&
-          footY <= obj.portal.y + obj.portal.height;
-
-        if (insidePortal) {
-          return obj;
-        }
-
-        continue;
-      }
-
-      // -------------------------------------------------
-      // Compatibilidad con mapas antiguos
-      // -------------------------------------------------
-      const insideHitbox =
-        footX >= obj.x &&
-        footX <= obj.x + obj.hitboxWidth &&
-        footY >= obj.y &&
-        footY <= obj.y + obj.hitboxHeight;
-
-      if (insideHitbox) {
-        return obj;
-      }
-    }
-
-    return null;
-  }
-
-  // -------------------------------------------------------
-  // DEVUELVE LOS DATOS DEL CATÁLOGO DE UN HOTSPOT
-  // -------------------------------------------------------
-  function getHotspotLibraryItem(hotspot) {
-    if (!hotspot?.typeId || !window.HotspotLibrary) {
-      return null;
-    }
-
-    return (
-      window.HotspotLibrary.find((item) => item.id === hotspot.typeId) ?? null
-    );
-  }
-
-  // -------------------------------------------------------
-  // INTERACCIÓN CON OBJETOS / VERBOS
-  // -------------------------------------------------------
-  function handleObjectInteraction(obj) {
-    const player = getActiveCharacter();
-    const verb = state.currentVerb.toLowerCase();
-
-    // ---------------------------------------------------
-    // WHAT IS
-    // ---------------------------------------------------
-    if (verb === "what is") {
-      showTemporaryMessage(obj.description, 2000);
-      return;
-    }
-
-    // ---------------------------------------------------
-    // PICK UP
-    // ---------------------------------------------------
-    if (verb === "pick up") {
-      return InventoryManager.handlePickUp(
-        obj,
-        state,
-        actionLine,
-        currentMapName,
-      );
-    }
-
-    // ---------------------------------------------------
-    // USE
-    // ---------------------------------------------------
-    if (verb === "use") {
-      // ¿Se ha seleccionado un objeto del inventario?
-      if (!state.selectedInventoryItem) {
-        if (actionLine) {
-          actionLine.textContent = "¿Usar qué?";
-        }
-
-        return;
-      }
-
-      // -------------------------------------------------
-      // ¿Este objeto necesita una llave?
-      // -------------------------------------------------
-      if (
-        obj.requiredItem &&
-        state.selectedInventoryItem.typeId === obj.requiredItem
-      ) {
-        // Abrir y desbloquear toda la pareja de puertas
-        DoorManager.setDoorState(obj.doorPair, true, false, mapData?.objects);
-
-        // Guardar el nuevo estado de esta puerta
-        DoorManager.persistObjectState(obj, currentMapName);
-
-        // Dejar de usar la llave
-        state.selectedInventoryItem = null;
-
-        InventoryManager.refreshInventoryUI(state, actionLine);
-
-        // Volver al verbo por defecto
-        state.currentVerb = "Walk to";
-
-        if (actionLine) {
-          actionLine.textContent = `${obj.name} se ha abierto.`;
-        }
-
-        RenderManager.render(
-          ctx,
-          canvas,
-          mapImageLoaded,
-          mapImage,
-          state,
-          mapData,
-          objectSprites,
-          playerSprites,
-          MAP_SCALE,
-          PLAYER_SCALE,
-          FRAME_WIDTH,
-          FRAME_HEIGHT,
-          getActiveCharacter(),
-        );
-
-        return;
-      }
-
-      // -------------------------------------------------
-      // Objeto incorrecto
-      // -------------------------------------------------
-      if (actionLine) {
-        actionLine.textContent = `No puedo usar ${state.selectedInventoryItem.name} con ${obj.name}.`;
-      }
-
-      return;
-    }
-
-    // ---------------------------------------------------
-    // OPEN
-    // ---------------------------------------------------
-    if (verb === "open") {
-      if (obj.type !== "door") {
-        actionLine.textContent = `No puedo abrir ${obj.name}.`;
-        return;
-      }
-
-      if (obj.opened) {
-        actionLine.textContent = `${obj.name} ya está abierta.`;
-        return;
-      }
-
-      // Solo la puerta con llave
-      if (obj.requiredItem) {
-        actionLine.textContent = "Parece que está cerrada con llave.";
-        return;
-      }
-
-      // Puertas normales
-      DoorManager.setDoorState(obj.doorPair, true, false, mapData?.objects);
-
-      RenderManager.render(
-        ctx,
-        canvas,
-        mapImageLoaded,
-        mapImage,
-        state,
-        mapData,
-        objectSprites,
-        playerSprites,
-        MAP_SCALE,
-        PLAYER_SCALE,
-        FRAME_WIDTH,
-        FRAME_HEIGHT,
-        getActiveCharacter(),
-      );
-
-      actionLine.textContent = `${obj.name} se ha abierto.`;
-
-      return;
-    }
-
-    // ---------------------------------------------------
-    // RESTO DE VERBOS
-    // ---------------------------------------------------
-    if (actionLine) {
-      actionLine.textContent = `${getVerbLabel(state.currentVerb)} ${obj.name}`;
-    }
-  }
-
-  // -------------------------------------------------------
-  // INTERACCIÓN CON HOTSPOTS
-  // -------------------------------------------------------
-  function handleHotspotInteraction(hotspot) {
-    const hotspotItem = getHotspotLibraryItem(hotspot);
-
-    if (!hotspotItem) return;
-
-    const verb = state.currentVerb.toLowerCase();
-
-    // ---------------------------------------------------
-    // WHAT IS
-    // ---------------------------------------------------
-    if (verb === "what is") {
-      showTemporaryMessage(
-        hotspotItem.description,
-
-        2000,
-      );
-
-      return;
-    }
-
-    // ---------------------------------------------------
-    // RESTO DE VERBOS
-    // ---------------------------------------------------
-    if (actionLine) {
-      actionLine.textContent = `${state.currentVerb} ${hotspotItem.name}`;
-    }
-  }
-
-  // -------------------------------------------------------
-  // MUESTRA UN MENSAJE TEMPORAL EN LA ACTION LINE
-  // -------------------------------------------------------
-  function showTemporaryMessage(text, duration = 2000) {
-    // limpiar timeout anterior
-    if (state.messageTimeout) {
-      clearTimeout(state.messageTimeout);
-    }
-
-    if (actionLine) {
-      actionLine.textContent = text;
-    }
-
-    state.messageTimeout = setTimeout(() => {
-      if (actionLine) {
-        actionLine.textContent = `${state.currentVerb} ...`;
-      }
-
-      state.messageTimeout = null;
-    }, duration);
   }
 
   // -------------------------------------------------------
