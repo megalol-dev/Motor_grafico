@@ -773,7 +773,12 @@ window.GameModule = (() => {
         (worldPoint.y - FOOT_OFFSET_Y) / mapData.tileHeight,
       );
 
-      const targetTile = findNearestWalkableTile(clickedCol, clickedRow, 6);
+      const targetTile = WorldManager.findNearestWalkableTile(
+        clickedCol,
+        clickedRow,
+        mapData,
+        6,
+      );
 
       if (!targetTile) {
         state.target.active = false;
@@ -967,142 +972,28 @@ window.GameModule = (() => {
         state.player.width / 2,
         CameraManager.getWorldWidth(mapData, canvas) - state.player.width / 2,
       ),
-      y: CameraManager.clamp(worldY, state.player.height, CameraManager.getWorldHeight(mapData, canvas)),
+      y: CameraManager.clamp(
+        worldY,
+        state.player.height,
+        CameraManager.getWorldHeight(mapData, canvas),
+      ),
     };
-  }
-
-  // -------------------------------------------------------
-  // COMPRUEBA SI UNA CASILLA ESTÁ BLOQUEADA POR UN OBJETO
-  // -------------------------------------------------------
-  function isTileBlockedByObject(col, row) {
-    if (!mapData?.objects) {
-      return false;
-    }
-
-    const tileW = mapData.tileWidth;
-    const tileH = mapData.tileHeight;
-
-    // Centro de la casilla que A* quiere utilizar
-    const tileCenterX = col * tileW + tileW / 2;
-    const tileFootY = (row + 1) * tileH;
-
-    for (const obj of mapData.objects) {
-      if (obj.type !== "door") {
-        continue;
-      }
-
-      // Una puerta abierta deja de bloquear el camino
-      if (obj.opened) {
-        continue;
-      }
-
-      const inside =
-        tileCenterX >= obj.x &&
-        tileCenterX <= obj.x + obj.hitboxWidth &&
-        tileFootY >= obj.y &&
-        tileFootY <= obj.y + obj.hitboxHeight;
-
-      if (inside) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  // -------------------------------------------------------
-  // COMPRUEBA SI UNA CELDA ES CAMINABLE
-  // -------------------------------------------------------
-  function isWalkableTile(col, row) {
-    if (!mapData?.walkable) {
-      return false;
-    }
-
-    if (row < 0 || col < 0 || row >= mapData.rows || col >= mapData.cols) {
-      return false;
-    }
-
-    // La física fija del mapa bloquea la casilla
-    if (mapData.walkable[row]?.[col] !== 1) {
-      return false;
-    }
-
-    // Una puerta cerrada bloquea dinámicamente la casilla
-    if (isTileBlockedByObject(col, row)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  // -------------------------------------------------------
-  // BUSCA LA CELDA CAMINABLE MÁS CERCANA
-  // -------------------------------------------------------
-  function findNearestWalkableTile(startCol, startRow, maxRadius = 6) {
-    if (isWalkableTile(startCol, startRow)) {
-      return { col: startCol, row: startRow };
-    }
-
-    let best = null;
-    let bestDist = Infinity;
-
-    for (let radius = 1; radius <= maxRadius; radius += 1) {
-      for (let row = startRow - radius; row <= startRow + radius; row += 1) {
-        for (let col = startCol - radius; col <= startCol + radius; col += 1) {
-          if (!isWalkableTile(col, row)) continue;
-
-          const dx = col - startCol;
-          const dy = row - startRow;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist < bestDist) {
-            bestDist = dist;
-            best = { col, row };
-          }
-        }
-      }
-
-      if (best) return best;
-    }
-
-    return null;
-  }
-
-  // -------------------------------------------------------
-  // DEVUELVE LA CELDA EN LA QUE ESTÁ EL PERSONAJE
-  // -------------------------------------------------------
-  function getCharacterTile(character = getActiveCharacter()) {
-    const col = Math.floor(character.x / mapData.tileWidth);
-
-    const row = Math.floor((character.y - FOOT_OFFSET_Y) / mapData.tileHeight);
-
-    return {
-      col,
-      row,
-    };
-  }
-
-  // -------------------------------------------------------
-  // CREA UNA CLAVE ÚNICA PARA UNA CELDA
-  // -------------------------------------------------------
-  function getTileKey(col, row) {
-    return `${col},${row}`;
   }
 
   // -------------------------------------------------------
   // CALCULA UNA RUTA MEDIANTE A*
   // -------------------------------------------------------
   function findPathAStar(startCol, startRow, targetCol, targetRow) {
-    if (!isWalkableTile(startCol, startRow)) {
+    if (!WorldManager.isWalkableTile(startCol, startRow, mapData)) {
       return [];
     }
 
-    if (!isWalkableTile(targetCol, targetRow)) {
+    if (!WorldManager.isWalkableTile(targetCol, targetRow, mapData)) {
       return [];
     }
 
-    const startKey = getTileKey(startCol, startRow);
-    const targetKey = getTileKey(targetCol, targetRow);
+    const startKey = WorldManager.getTileKey(startCol, startRow);
+    const targetKey = WorldManager.getTileKey(targetCol, targetRow);
 
     // Celdas pendientes de revisar
     const openSet = [
@@ -1148,7 +1039,7 @@ window.GameModule = (() => {
       }
 
       const current = openSet.splice(bestIndex, 1)[0];
-      const currentKey = getTileKey(current.col, current.row);
+      const currentKey = WorldManager.getTileKey(current.col, current.row);
 
       // Hemos llegado al destino
       if (currentKey === targetKey) {
@@ -1180,11 +1071,11 @@ window.GameModule = (() => {
         const nextCol = current.col + direction.col;
         const nextRow = current.row + direction.row;
 
-        if (!isWalkableTile(nextCol, nextRow)) {
+        if (!WorldManager.isWalkableTile(nextCol, nextRow, mapData)) {
           continue;
         }
 
-        const nextKey = getTileKey(nextCol, nextRow);
+        const nextKey = WorldManager.getTileKey(nextCol, nextRow);
 
         if (closedSet.has(nextKey)) {
           continue;
@@ -1234,7 +1125,11 @@ window.GameModule = (() => {
   function createPathToTile(targetCol, targetRow) {
     const player = getActiveCharacter();
 
-    const startTile = getCharacterTile(player);
+    const startTile = WorldManager.getCharacterTile(
+      player,
+      mapData,
+      FOOT_OFFSET_Y,
+    );
 
     const path = findPathAStar(
       startTile.col,
@@ -1256,7 +1151,6 @@ window.GameModule = (() => {
 
     return true;
   }
-
   // -------------------------------------------------------
   // BUSCA UNA CELDA CAMINABLE CERCA DE UN OBJETO
   // -------------------------------------------------------
@@ -1313,14 +1207,19 @@ window.GameModule = (() => {
       { col: objectCol, row: objectRow },
     ];
 
-    for (const tile of candidates) {
-      if (isWalkableTile(tile.col, tile.row)) {
-        return tile;
-      }
-    }
+   for (const tile of candidates) {
+     if (WorldManager.isWalkableTile(tile.col, tile.row, mapData)) {
+       return tile;
+     }
+   }
 
     // Si ninguna cercana vale, buscamos una caminable alrededor
-    return findNearestWalkableTile(objectCol, objectRow, 8);
+   return WorldManager.findNearestWalkableTile(
+     objectCol,
+     objectRow,
+     mapData,
+     8,
+   );
   }
 
   // -------------------------------------------------------
@@ -1336,7 +1235,12 @@ window.GameModule = (() => {
     const hotspotCol = Math.floor(centerX / tileW);
     const hotspotRow = Math.floor(bottomY / tileH);
 
-    return findNearestWalkableTile(hotspotCol, hotspotRow, 8);
+    return WorldManager.findNearestWalkableTile(
+      hotspotCol,
+      hotspotRow,
+      mapData,
+      8,
+    );
   }
 
   // -------------------------------------------------------
@@ -2036,7 +1940,6 @@ window.GameModule = (() => {
 
     ctx.restore();
   }
-
 
   // -------------------------------------------------------
   // DEVUELVE EL PERSONAJE ACTIVO
