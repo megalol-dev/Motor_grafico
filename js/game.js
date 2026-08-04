@@ -240,7 +240,7 @@ window.GameModule = (() => {
     await Promise.all([loadPlayerSprite(), loadMapData()]);
 
     if (mapData) {
-      applyPersistentObjectStates(currentMapName);
+      DoorManager.applyPersistentObjectStates(currentMapName, mapData?.objects);
 
       await loadMapImage();
 
@@ -368,151 +368,12 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
-  // OBTENER ESTADO DE UN MAPA
-  // -------------------------------------------------------
-  function getMapState(mapName) {
-    if (!GameState.maps[mapName]) {
-      GameState.maps[mapName] = {
-        objects: {},
-      };
-    }
-
-    return GameState.maps[mapName];
-  }
-
-  // -------------------------------------------------------
-  // OBTENER ESTADO DE UN OBJETO
-  // -------------------------------------------------------
-  function getObjectState(mapName, objectId) {
-    const mapState = getMapState(mapName);
-
-    if (!mapState.objects[objectId]) {
-      mapState.objects[objectId] = {};
-    }
-
-    return mapState.objects[objectId];
-  }
-
-  // -------------------------------------------------------
-  // OBTENER ESTADO GLOBAL DE UNA PUERTA
-  // -------------------------------------------------------
-  // -------------------------------------------------------
-  // OBTENER ESTADO GLOBAL DE UNA PUERTA
-  // -------------------------------------------------------
-  function getDoorState(doorPair) {
-    if (!doorPair) {
-      return null;
-    }
-
-    // Seguridad: crear el almacén de puertas si no existe
-    GameState.doors ??= {};
-
-    if (!GameState.doors[doorPair]) {
-      GameState.doors[doorPair] = {
-        opened: false,
-        locked: true,
-      };
-    }
-
-    return GameState.doors[doorPair];
-  }
-
-  // -------------------------------------------------------
-  // SINCRONIZA UNA PUERTA CON SU ESTADO GLOBAL
-  // -------------------------------------------------------
-  function syncDoorState(obj) {
-    if (obj.type !== "door" || !obj.doorPair) {
-      return;
-    }
-
-    const doorState = getDoorState(obj.doorPair);
-
-    obj.opened = doorState.opened;
-    obj.locked = doorState.locked;
-
-    // Cerrada: se interactúa desde delante.
-    // Abierta: se puede entrar en la zona del portal.
-    obj.interactionMode = obj.opened ? (obj.teleportMode ?? "inside") : "front";
-  }
-
-  // -------------------------------------------------------
-  // SINCRONIZAR TODAS LAS PUERTAS DEL MAPA
-  // -------------------------------------------------------
-  function syncAllDoors() {
-    if (!mapData?.objects) {
-      return;
-    }
-
-    mapData.objects.forEach((obj) => {
-      syncDoorState(obj);
-    });
-  }
-
-  // -------------------------------------------------------
-  // CAMBIA EL ESTADO DE UNA PUERTA Y SINCRONIZA EL MAPA
-  // -------------------------------------------------------
-  function setDoorState(doorPair, opened, locked) {
-    if (!doorPair) {
-      return;
-    }
-
-    const doorState = getDoorState(doorPair);
-
-    doorState.opened = opened;
-    doorState.locked = locked;
-
-    syncAllDoors();
-  }
-
-  // -------------------------------------------------------
-  // CREA UNA COPIA SERIALIZABLE DE UN VALOR
-  // -------------------------------------------------------
-  function cloneSerializable(value) {
-    return JSON.parse(JSON.stringify(value));
-  }
-
-  // -------------------------------------------------------
   // DEVUELVE EL TEXTO VISIBLE DE UN VERBO
   // -------------------------------------------------------
   function getVerbLabel(id) {
     const verb = window.VerbLibrary.find((v) => v.id === id);
 
     return verb?.label ?? id;
-  }
-
-  // -------------------------------------------------------
-  // GUARDA AUTOMÁTICAMENTE EL ESTADO COMPLETO DE UN OBJETO
-  // -------------------------------------------------------
-  function persistObjectState(obj, mapName = currentMapName) {
-    if (!obj?.id) {
-      console.warn("No se puede guardar un objeto sin id.");
-      return;
-    }
-
-    const mapState = getMapState(mapName);
-
-    mapState.objects[obj.id] = cloneSerializable(obj);
-  }
-
-  // -------------------------------------------------------
-  // APLICAR ESTADOS PERSISTENTES A LOS OBJETOS DEL MAPA
-  // -------------------------------------------------------
-  function applyPersistentObjectStates(mapName) {
-    if (!mapData?.objects) {
-      return;
-    }
-
-    const savedObjects = GameState.maps[mapName]?.objects ?? {};
-
-    mapData.objects.forEach((obj) => {
-      const savedObject = savedObjects[obj.id];
-
-      if (savedObject) {
-        Object.assign(obj, cloneSerializable(savedObject));
-      }
-
-      syncDoorState(obj);
-    });
   }
 
   // -------------------------------------------------------
@@ -549,8 +410,7 @@ window.GameModule = (() => {
     await loadMapData(mapName);
 
     // Aplicar primero los estados persistentes
-    applyPersistentObjectStates(mapName);
-
+    DoorManager.applyPersistentObjectStates(currentMapName, mapData?.objects);
     // Cargar imagen del mapa
     await loadMapImage();
 
@@ -1025,7 +885,7 @@ window.GameModule = (() => {
 
         if (state.currentVerb !== "use") {
           state.selectedInventoryItem = null;
-          refreshInventoryUI();
+          InventoryManager.refreshInventoryUI(state, actionLine);
         }
 
         if (actionLine) {
@@ -1070,7 +930,7 @@ window.GameModule = (() => {
         );
         state.target.active = false;
 
-        refreshInventoryUI();
+        InventoryManager.refreshInventoryUI(state, actionLine);
       });
     });
   }
@@ -2441,50 +2301,12 @@ window.GameModule = (() => {
     // PICK UP
     // ---------------------------------------------------
     if (verb === "pick up") {
-      // El objeto no puede recogerse
-      if (!obj.pickup) {
-        if (actionLine) {
-          actionLine.textContent = `No puedo coger ${obj.name}.`;
-        }
-
-        return;
-      }
-
-      // Ya estaba recogido
-      if (obj.collected) {
-        if (actionLine) {
-          actionLine.textContent = `${obj.name} ya no está aquí.`;
-        }
-
-        return;
-      }
-
-      // Recoger objeto
-      obj.collected = true;
-      obj.visible = false;
-
-      // Guardar automáticamente todos sus cambios
-      persistObjectState(obj);
-
-      const libraryItem = window.ObjectLibrary.find(
-        (item) => item.id === obj.typeId,
+      return InventoryManager.handlePickUp(
+        obj,
+        state,
+        actionLine,
+        currentMapName,
       );
-
-      state.inventory[state.activeCharacter].push({
-        id: obj.id,
-        typeId: libraryItem?.id ?? obj.id,
-        name: obj.name,
-        sprite: obj.sprite,
-        description: obj.description,
-      });
-
-      refreshInventoryUI();
-
-      if (actionLine) {
-        actionLine.textContent = `Has cogido ${obj.name}.`;
-      }
-
-      return;
     }
 
     // ---------------------------------------------------
@@ -2508,15 +2330,15 @@ window.GameModule = (() => {
         state.selectedInventoryItem.typeId === obj.requiredItem
       ) {
         // Abrir y desbloquear toda la pareja de puertas
-        setDoorState(obj.doorPair, true, false);
+        DoorManager.setDoorState(obj.doorPair, true, false, mapData?.objects);
 
         // Guardar el nuevo estado de esta puerta
-        persistObjectState(obj);
+        DoorManager.persistObjectState(obj, currentMapName);
 
         // Dejar de usar la llave
         state.selectedInventoryItem = null;
 
-        refreshInventoryUI();
+        InventoryManager.refreshInventoryUI(state, actionLine);
 
         // Volver al verbo por defecto
         state.currentVerb = "Walk to";
@@ -2561,7 +2383,7 @@ window.GameModule = (() => {
       }
 
       // Puertas normales
-      setDoorState(obj.doorPair, true, false);
+      DoorManager.setDoorState(obj.doorPair, true, false, mapData?.objects);
 
       render();
 
@@ -2629,64 +2451,6 @@ window.GameModule = (() => {
 
       state.messageTimeout = null;
     }, duration);
-  }
-
-  // -------------------------------------------------------
-  // ACTUALIZA VISUALMENTE EL INVENTARIO HTML
-  // -------------------------------------------------------
-  function refreshInventoryUI() {
-    const slots = document.querySelectorAll(".inventory-slot");
-
-    // ---------------------------------------------------
-    // LIMPIAR SLOTS
-    // ---------------------------------------------------
-    slots.forEach((slot) => {
-      slot.innerHTML = "";
-    });
-
-    // ---------------------------------------------------
-    // INVENTARIO DEL PERSONAJE ACTIVO
-    // ---------------------------------------------------
-    const inventory = state.inventory[state.activeCharacter];
-
-    inventory.forEach((obj, index) => {
-      const img = document.createElement("img");
-
-      img.src = `./img/objects/${obj.sprite}`;
-
-      img.classList.add("inventory-item");
-
-      // ---------------------------------------------------
-      // RESALTAR OBJETO SELECCIONADO
-      // ---------------------------------------------------
-      if (state.selectedInventoryItem === obj) {
-        img.style.outline = "3px solid yellow";
-      }
-
-      // ---------------------------------------------------
-      // CLICK SOBRE OBJETO DEL INVENTARIO
-      // ---------------------------------------------------
-      img.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        // Solo funciona con el verbo USE
-        if (state.currentVerb.toLowerCase() !== "use") {
-          return;
-        }
-
-        state.selectedInventoryItem = obj;
-
-        // Redibujar inventario para mostrar el borde amarillo
-        refreshInventoryUI();
-
-        if (actionLine) {
-          actionLine.textContent = `Use ${obj.name} with...`;
-        }
-      });
-
-      slots[index].appendChild(img);
-    });
   }
 
   // -------------------------------------------------------
