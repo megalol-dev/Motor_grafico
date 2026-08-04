@@ -647,7 +647,11 @@ window.GameModule = (() => {
           const dx = state.target.x - state.player.x;
           const dy = state.target.y - state.player.y;
 
-          updateDirectionFromVector(dx, dy);
+          MovementManager.updateDirectionFromVector(
+            dx,
+            dy,
+            getActiveCharacter(),
+          );
 
           return;
         }
@@ -677,7 +681,11 @@ window.GameModule = (() => {
           const dx = state.target.x - state.player.x;
           const dy = state.target.y - state.player.y;
 
-          updateDirectionFromVector(dx, dy);
+          MovementManager.updateDirectionFromVector(
+            dx,
+            dy,
+            getActiveCharacter(),
+          );
 
           return;
         }
@@ -1207,19 +1215,19 @@ window.GameModule = (() => {
       { col: objectCol, row: objectRow },
     ];
 
-   for (const tile of candidates) {
-     if (WorldManager.isWalkableTile(tile.col, tile.row, mapData)) {
-       return tile;
-     }
-   }
+    for (const tile of candidates) {
+      if (WorldManager.isWalkableTile(tile.col, tile.row, mapData)) {
+        return tile;
+      }
+    }
 
     // Si ninguna cercana vale, buscamos una caminable alrededor
-   return WorldManager.findNearestWalkableTile(
-     objectCol,
-     objectRow,
-     mapData,
-     8,
-   );
+    return WorldManager.findNearestWalkableTile(
+      objectCol,
+      objectRow,
+      mapData,
+      8,
+    );
   }
 
   // -------------------------------------------------------
@@ -1274,7 +1282,7 @@ window.GameModule = (() => {
       }
     }
 
-    updatePlayerAnimation(delta);
+    MovementManager.updatePlayerAnimation(delta, getActiveCharacter());
     checkTeleportTrigger();
     CameraManager.updateCamera(
       getActiveCharacter(),
@@ -1326,7 +1334,7 @@ window.GameModule = (() => {
     moveX /= length;
     moveY /= length;
 
-    updateDirectionFromVector(moveX, moveY);
+    MovementManager.updateDirectionFromVector(moveX, moveY, player);
 
     const step = player.speed * delta;
 
@@ -1337,7 +1345,7 @@ window.GameModule = (() => {
     const oldY = player.y;
 
     // movimiento libre actual
-    tryMovePlayer(nextX, nextY);
+    MovementManager.tryMovePlayer(nextX, nextY, player, mapData, FOOT_OFFSET_Y);
 
     const movedDistance = Math.hypot(player.x - oldX, player.y - oldY);
 
@@ -1419,7 +1427,7 @@ window.GameModule = (() => {
     const moveX = dx / distance;
     const moveY = dy / distance;
 
-    updateDirectionFromVector(moveX, moveY);
+    MovementManager.updateDirectionFromVector(moveX, moveY, player);
 
     const step = player.speed * delta;
     const actualStep = Math.min(step, distance);
@@ -1500,7 +1508,7 @@ window.GameModule = (() => {
     const moveX = dx / distance;
     const moveY = dy / distance;
 
-    updateDirectionFromVector(moveX, moveY);
+    MovementManager.updateDirectionFromVector(moveX, moveY, player);
 
     // dirección visual del personaje activo
 
@@ -1517,7 +1525,7 @@ window.GameModule = (() => {
     // MOVIMIENTO
     // ---------------------------------------------------
 
-    tryMovePlayer(nextX, nextY);
+    MovementManager.tryMovePlayer(nextX, nextY, player, mapData, FOOT_OFFSET_Y);
 
     const movedDistance = Math.hypot(player.x - oldX, player.y - oldY);
 
@@ -1532,115 +1540,6 @@ window.GameModule = (() => {
         */
 
     player.moving = true;
-  }
-
-  // -------------------------------------------------------
-  // INTENTA MOVER AL JUGADOR USANDO LA MATRIZ WALKABLE
-  // -------------------------------------------------------
-  function tryMovePlayer(nextX, nextY) {
-    const player = getActiveCharacter();
-
-    if (canStandAt(nextX, player.y)) {
-      player.x = nextX;
-    }
-
-    if (canStandAt(player.x, nextY)) {
-      player.y = nextY;
-    }
-  }
-
-  // -------------------------------------------------------
-  // COMPRUEBA SI EL PERSONAJE PUEDE ESTAR DE PIE EN ESA POSICIÓN
-  // -------------------------------------------------------
-  function canStandAt(worldX, worldY) {
-    if (!mapData?.walkable) return true;
-
-    const tileW = mapData.tileWidth;
-    const tileH = mapData.tileHeight;
-
-    const footX = worldX;
-    const footY = worldY - FOOT_OFFSET_Y;
-
-    const col = Math.floor(footX / tileW);
-    const row = Math.floor(footY / tileH);
-
-    if (row < 0 || col < 0 || row >= mapData.rows || col >= mapData.cols) {
-      return false;
-    }
-
-    if (mapData.walkable[row]?.[col] !== 1) {
-      return false;
-    }
-
-    if (isBlockedByObject(worldX, worldY)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  function isBlockedByObject(worldX, worldY) {
-    if (!mapData?.objects) {
-      return false;
-    }
-
-    for (const obj of mapData.objects) {
-      if (obj.type !== "door") {
-        continue;
-      }
-
-      // puerta abierta -> no bloquea
-      if (obj.opened) {
-        continue;
-      }
-
-      const inside =
-        worldX >= obj.x &&
-        worldX <= obj.x + obj.hitboxWidth &&
-        worldY >= obj.y &&
-        worldY <= obj.y + obj.hitboxHeight;
-
-      if (inside) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  // -------------------------------------------------------
-  // DIRECCIÓN VISUAL SEGÚN VECTOR
-  // -------------------------------------------------------
-  function updateDirectionFromVector(moveX, moveY) {
-    const player = getActiveCharacter();
-
-    if (Math.abs(moveX) > Math.abs(moveY)) {
-      player.direction = moveX < 0 ? "left" : "right";
-    } else {
-      player.direction = moveY < 0 ? "up" : "down";
-    }
-  }
-
-  // -------------------------------------------------------
-  // ANIMACIÓN DEL PERSONAJE
-  // -------------------------------------------------------
-  function updatePlayerAnimation(delta) {
-    const player = getActiveCharacter();
-
-    if (!player.moving) {
-      player.animFrame = 0;
-      player.animTimer = 0;
-
-      return;
-    }
-
-    player.animTimer += delta;
-
-    if (player.animTimer >= 0.12) {
-      player.animTimer = 0;
-
-      player.animFrame = (player.animFrame + 1) % 4;
-    }
   }
 
   // -------------------------------------------------------
