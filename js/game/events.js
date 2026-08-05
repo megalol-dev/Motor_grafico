@@ -239,6 +239,19 @@ function prepareObjectInteraction(
     mapData,
   );
 
+ 
+
+  console.log("Puerta:", clickedObject.name);
+  console.log("Casilla:", interactionTile);
+  console.log(
+    "Walkable:",
+    WorldManager.isWalkableTile(
+      interactionTile.col,
+      interactionTile.row,
+      mapData,
+    ),
+  );
+
   if (!interactionTile) {
     InteractionManager.showTemporaryMessage(
       `No puedo llegar a ${clickedObject.name}`,

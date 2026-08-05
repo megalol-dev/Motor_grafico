@@ -75,10 +75,6 @@ function syncDoorState(obj) {
 
   obj.opened = doorState.opened;
   obj.locked = doorState.locked;
-
-  // Cerrada: se interactúa desde delante.
-  // Abierta: se puede entrar en la zona del portal.
-  obj.interactionMode = obj.opened ? (obj.teleportMode ?? "inside") : "front";
 }
 
 // -------------------------------------------------------

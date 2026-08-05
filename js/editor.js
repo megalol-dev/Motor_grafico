@@ -808,7 +808,6 @@ window.EditorModule = (() => {
     // HOTSPOT QUE SE ESTÁ DIBUJANDO
     // ------------------------------------------
 
-
     drawHotspotPreview();
 
     drawPortalPreview();
@@ -859,7 +858,7 @@ window.EditorModule = (() => {
         if (obj.portal && obj.portal.width > 0 && obj.portal.height > 0) {
           ctx.fillStyle = "rgba(255,0,180,0.25)";
 
-ctx.strokeStyle = "#ff00b4";
+          ctx.strokeStyle = "#ff00b4";
 
           ctx.lineWidth = 2;
 
@@ -909,29 +908,29 @@ ctx.strokeStyle = "#ff00b4";
   // -------------------------------------------------------
   // DIBUJAR HOTSPOTS
   // -------------------------------------------------------
-function drawEditorHotspots() {
-  ctx.save();
+  function drawEditorHotspots() {
+    ctx.save();
 
-  editorHotspots.forEach((hotspot) => {
-    if (hotspot === selectedHotspot) {
-      // Hotspot seleccionado
-      ctx.fillStyle = "rgba(0,255,255,0.35)";
-      ctx.strokeStyle = "#00ffff";
-    } else {
-      // Hotspots existentes
-      ctx.fillStyle = "rgba(0,180,255,0.22)";
-      ctx.strokeStyle = "#00d8ff";
-    }
+    editorHotspots.forEach((hotspot) => {
+      if (hotspot === selectedHotspot) {
+        // Hotspot seleccionado
+        ctx.fillStyle = "rgba(0,255,255,0.35)";
+        ctx.strokeStyle = "#00ffff";
+      } else {
+        // Hotspots existentes
+        ctx.fillStyle = "rgba(0,180,255,0.22)";
+        ctx.strokeStyle = "#00d8ff";
+      }
 
-    ctx.lineWidth = 2;
+      ctx.lineWidth = 2;
 
-    ctx.fillRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
+      ctx.fillRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
 
-    ctx.strokeRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
-  });
+      ctx.strokeRect(hotspot.x, hotspot.y, hotspot.width, hotspot.height);
+    });
 
-  ctx.restore();
-}
+    ctx.restore();
+  }
 
   // -------------------------------------------------------
   // PREVISUALIZACIÓN DEL HOTSPOT
@@ -1629,26 +1628,23 @@ ${interactionButton}
       }
 
       obj.typeId ??= libraryItem.id;
-
       obj.type ??= libraryItem.type ?? "item";
-
       obj.pickup ??= libraryItem.pickup ?? false;
-
       obj.locked ??= libraryItem.locked ?? false;
-
       obj.opened ??= libraryItem.opened ?? false;
-
       obj.requiredItem ??= libraryItem.requiredItem ?? null;
-
       obj.closedSprite ??= libraryItem.closedSprite ?? null;
-
       obj.openSprite ??= libraryItem.openSprite ?? null;
-
       obj.doorPair ??= libraryItem.doorPair ?? null;
-
       obj.interactionMode ??= libraryItem.interactionMode ?? "front";
-
       obj.teleportMode ??= libraryItem.teleportMode ?? "front";
+      if (libraryItem.interactionTileX !== undefined) {
+        obj.interactionTileX = libraryItem.interactionTileX;
+      }
+
+      if (libraryItem.interactionTileY !== undefined) {
+        obj.interactionTileY = libraryItem.interactionTileY;
+      }
 
       obj.portal ??= {
         x: 0,

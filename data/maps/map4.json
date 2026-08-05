@@ -53,7 +53,7 @@
       0,
       0,
       0,
-      1,
+      0,
       0,
       0,
       0,
@@ -73,7 +73,7 @@
       0,
       0,
       0,
-      1,
+      0,
       0,
       0,
       0,
@@ -130,7 +130,7 @@
     {
       "id": "object_1",
       "name": "Puerta",
-      "description": "",
+      "description": "Es una puerta.",
       "x": 166,
       "y": 51,
       "spriteWidth": 24,
@@ -152,16 +152,16 @@
       "teleportDirection": "down",
       "interactionMode": "inside",
       "teleportMode": "inside",
-      "interactionTileX": null,
-      "interactionTileY": null,
+      "interactionTileX": 8,
+      "interactionTileY": 4,
       "typeId": "door_5",
       "doorPair": "door_pair_3",
       "closedSprite": null,
       "portal": {
-        "x": 151,
-        "y": 43,
-        "width": 62,
-        "height": 95
+        "x": 165,
+        "y": 51,
+        "width": 27,
+        "height": 71
       }
     }
   ],

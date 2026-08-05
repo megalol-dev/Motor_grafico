@@ -17,29 +17,11 @@ function getObjectAt(worldX, worldY, mapData) {
     if (!obj.visible) continue;
     if (obj.collected) continue;
 
-    let inside = false;
-
-    // -----------------------------------------
-    // PUERTA ABIERTA -> usar PORTAL
-    // -----------------------------------------
-    if (obj.type === "door" && obj.opened && obj.portal) {
-      inside =
-        worldX >= obj.portal.x &&
-        worldX <= obj.portal.x + obj.portal.width &&
-        worldY >= obj.portal.y &&
-        worldY <= obj.portal.y + obj.portal.height;
-    }
-
-    // -----------------------------------------
-    // RESTO -> usar HITBOX
-    // -----------------------------------------
-    else {
-      inside =
-        worldX >= obj.x &&
-        worldX <= obj.x + obj.hitboxWidth &&
-        worldY >= obj.y &&
-        worldY <= obj.y + obj.hitboxHeight;
-    }
+    const inside =
+      worldX >= obj.x &&
+      worldX <= obj.x + obj.hitboxWidth &&
+      worldY >= obj.y &&
+      worldY <= obj.y + obj.hitboxHeight;
 
     if (inside) {
       return obj;
@@ -76,63 +58,7 @@ function getHotspotAt(worldX, worldY, mapData) {
   return null;
 }
 
-// -------------------------------------------------------
-// DEVUELVE EL PORTAL QUE ESTÁ PISANDO EL PERSONAJE <refactor>
-// -------------------------------------------------------
-function getTeleportUnderPlayer(player, mapData, FOOT_OFFSET_Y) {
-  if (!mapData?.objects) {
-    return null;
-  }
 
-  // pies del personaje
-  const footX = player.x;
-  const footY = player.y - FOOT_OFFSET_Y;
-
-  for (const obj of mapData.objects) {
-    // no es un portal
-    if (!obj.teleportTo) {
-      continue;
-    }
-
-    // puerta cerrada
-    if (!obj.opened) {
-      continue;
-    }
-
-    // -------------------------------------------------
-    // NUEVO SISTEMA
-    // Zona Portal dibujada desde el editor
-    // -------------------------------------------------
-    if (obj.portal) {
-      const insidePortal =
-        footX >= obj.portal.x &&
-        footX <= obj.portal.x + obj.portal.width &&
-        footY >= obj.portal.y &&
-        footY <= obj.portal.y + obj.portal.height;
-
-      if (insidePortal) {
-        return obj;
-      }
-
-      continue;
-    }
-
-    // -------------------------------------------------
-    // Compatibilidad con mapas antiguos
-    // -------------------------------------------------
-    const insideHitbox =
-      footX >= obj.x &&
-      footX <= obj.x + obj.hitboxWidth &&
-      footY >= obj.y &&
-      footY <= obj.y + obj.hitboxHeight;
-
-    if (insideHitbox) {
-      return obj;
-    }
-  }
-
-  return null;
-}
 
 // -------------------------------------------------------
 // DEVUELVE LOS DATOS DEL CATÁLOGO DE UN HOTSPOT <refactor>
@@ -221,8 +147,28 @@ function handleObjectInteraction(
   FRAME_WIDTH,
   FRAME_HEIGHT,
   getVerbLabel,
+  changeMap,
 ) {
   const verb = state.currentVerb.toLowerCase();
+  // ---------------------------------------------------
+  // WALK TO SOBRE UNA PUERTA ABIERTA
+  // ---------------------------------------------------
+  console.log(obj.id, "opened =", obj.opened, "pair =", obj.doorPair);
+  if (
+    verb === "walk to" &&
+    obj.type === "door" &&
+    obj.opened &&
+    obj.teleportTo
+  ) {
+    changeMap(
+      obj.teleportTo,
+      obj.teleportX,
+      obj.teleportY,
+      obj.teleportDirection ?? "down",
+    );
+
+    return;
+  }
 
   // ---------------------------------------------------
   // WHAT IS
@@ -381,5 +327,4 @@ window.InteractionManager = {
   handleObjectInteraction,
   getObjectAt,
   getHotspotAt,
-  getTeleportUnderPlayer,
 };

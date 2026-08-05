@@ -52,7 +52,12 @@ function updatePlayerByPath(delta, context) {
   const node = state.path[state.pathIndex];
 
   const targetX = node.col * mapData.tileWidth + mapData.tileWidth / 2;
-  const targetY = (node.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
+  const FOOT_POSITION_IN_TILE = 0.55;
+
+  const targetY =
+    node.row * mapData.tileHeight +
+    mapData.tileHeight * FOOT_POSITION_IN_TILE +
+    FOOT_OFFSET_Y;
 
   const dx = targetX - player.x;
   const dy = targetY - player.y;
@@ -92,6 +97,7 @@ function updatePlayerByPath(delta, context) {
           FRAME_WIDTH,
           FRAME_HEIGHT,
           getVerbLabel,
+          changeMap,
         );
 
         state.pendingInteraction = null;
@@ -206,6 +212,7 @@ function updatePlayerByMouseTarget(delta, context) {
         FRAME_WIDTH,
         FRAME_HEIGHT,
         getVerbLabel,
+        changeMap,
       );
 
       state.pendingInteraction = null;
@@ -222,20 +229,6 @@ function updatePlayerByMouseTarget(delta, context) {
       );
 
       state.pendingHotspot = null;
-    }
-
-    // ---------------------------------------------------
-    // TELETRANSPORTE PENDIENTE
-    // ---------------------------------------------------
-    if (state.pendingTeleport) {
-      changeMap(
-        state.pendingTeleport.teleportTo,
-        state.pendingTeleport.teleportX,
-        state.pendingTeleport.teleportY,
-        state.pendingTeleport.teleportDirection ?? "down",
-      );
-
-      state.pendingTeleport = null;
     }
 
     return;
@@ -288,32 +281,9 @@ function updatePlayerByMouseTarget(delta, context) {
   player.moving = true;
 }
 
-// -------------------------------------------------------
-// COMPRUEBA SI EL PERSONAJE ESTÁ PISANDO UN PORTAL
-// -------------------------------------------------------
-function checkTeleportTrigger(context) {
-  const { mapData, FOOT_OFFSET_Y, getActiveCharacter, changeMap } = context;
 
-  const portal = InteractionManager.getTeleportUnderPlayer(
-    getActiveCharacter(),
-    mapData,
-    FOOT_OFFSET_Y,
-  );
-
-  if (!portal) {
-    return;
-  }
-
-  changeMap(
-    portal.teleportTo,
-    portal.teleportX,
-    portal.teleportY,
-    portal.teleportDirection ?? "down",
-  );
-}
 
 window.PlayerController = {
   updatePlayerByPath,
   updatePlayerByMouseTarget,
-  checkTeleportTrigger,
 };

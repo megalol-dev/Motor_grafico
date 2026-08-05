@@ -199,38 +199,36 @@ function createPathToTile(
 // BUSCA UNA CELDA CAMINABLE CERCA DE UN OBJETO <refactor>
 // -------------------------------------------------------
 function findInteractionTileForObject(obj, mapData) {
+  console.log(obj.id, obj.interactionTileX, obj.interactionTileY);
+
+
+  // -------------------------------------------------------
+  // Casilla fija definida por el diseñador
+  // -------------------------------------------------------
+  if (
+    Number.isInteger(obj.interactionTileX) &&
+    Number.isInteger(obj.interactionTileY)
+  ) {
+    return {
+      col: obj.interactionTileX,
+      row: obj.interactionTileY,
+    };
+  }
+
   const tileW = mapData.tileWidth;
   const tileH = mapData.tileHeight;
 
   // -------------------------------------------------------
   // OBJETOS QUE SE INTERACTÚAN DESDE DENTRO
   // -------------------------------------------------------
-
   if (obj.interactionMode === "inside") {
-    // ---------------------------------------------------
-    // Si el objeto define una casilla fija,
-    // siempre usamos esa.
-    // ---------------------------------------------------
-    if (
-      Number.isInteger(obj.interactionTileX) &&
-      Number.isInteger(obj.interactionTileY)
-    ) {
-      return {
-        col: obj.interactionTileX,
-        row: obj.interactionTileY,
-      };
-    }
 
-    // ---------------------------------------------------
     // Compatibilidad con objetos antiguos
-    // ---------------------------------------------------
     const centerX = obj.x + obj.hitboxWidth / 2;
-
     const centerY = obj.y + obj.hitboxHeight / 2;
 
     return {
       col: Math.floor(centerX / tileW),
-
       row: Math.floor(centerY / tileH),
     };
   }

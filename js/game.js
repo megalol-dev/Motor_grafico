@@ -695,6 +695,7 @@ function update(delta) {
         FRAME_WIDTH,
         FRAME_HEIGHT,
         getVerbLabel,
+        changeMap,
       );
 
       state.pendingInteraction = null;
@@ -719,10 +720,6 @@ function update(delta) {
   MovementManager.updatePlayerAnimation(
     delta,
     getActiveCharacter(),
-  );
-
-  PlayerController.checkTeleportTrigger(
-    controllerContext,
   );
 
   CameraManager.updateCamera(

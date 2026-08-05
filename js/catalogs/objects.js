@@ -1,21 +1,8 @@
 // =======================================================
-// CATÁLOGO GLOBAL DE OBJETOS
+// CATÁLOGO DE OBJETOS
+// <hay dos tipos -> items y puertas>
 // =======================================================
-//
-// Este archivo define todos los objetos disponibles
-// en el motor de la aventura gráfica.
-//
-// Cada objeto actúa como una plantilla.
-// El editor copia estos valores cuando se crea
-// un nuevo objeto sobre un mapa.
-//
-// Los estados del juego (abierto, recogido, etc.)
-// se almacenan posteriormente en cada mapa y en
-// el GameState durante la partida.
-//
-// =======================================================
-
-// =======================================================
+// Tipo 1
 // PARÁMETROS GENERALES
 // =======================================================
 //
@@ -23,10 +10,14 @@
 // Identificador único del tipo de objeto.
 //
 // type
-// Tipo de objeto ->item <recolectable> door <puerta>
+// Tipo de objeto.
+// Ejemplos: item, door.
 //
 // name
-// Nombre que verá el jugador.
+// Nombre mostrado al jugador.
+//
+// description
+// Texto descriptivo del objeto.
 //
 // sprite
 // Imagen utilizada por el objeto.
@@ -37,7 +28,7 @@
 //
 // defaultHitboxWidth
 // defaultHitboxHeight
-// Tamaño de la zona de colisión.
+// Tamaño inicial de la zona de colisión.
 //
 // pickup
 // Indica si el objeto puede recogerse.
@@ -45,37 +36,47 @@
 // =======================================================
 
 // =======================================================
-// PARÁMETROS DE PUERTAS
+// Tipo 1
+// PARÁMETROS ESPECÍFICOS DE PUERTAS
 // =======================================================
 //
 // doorPair
-// Identificador compartido entre las dos caras
+// Identificador compartido entre ambas caras
 // de una misma puerta.
 //
 // locked
-// Indica si la puerta bloquea el paso.
+// Indica si la puerta permanece bloqueada.
 //
 // opened
 // Estado inicial de la puerta.
 //
 // requiredItem
-// Objeto necesario para abrirla (ej. una llave).
+// Objeto necesario para desbloquearla.
 //
 // interactionMode
-// Desde dónde puede interactuarse con la puerta.
+// Forma de interactuar con la puerta.
+// front  -> desde delante.
+// inside -> desde el interior del portal.
 //
 // teleportMode
-// Desde dónde puede activarse el teletransporte.
+// Forma en la que se activa el teletransporte.
 //
 // teleportTo
 // Mapa de destino.
 //
 // teleportX
 // teleportY
-// Posición inicial del jugador en el mapa destino.
+// Casilla donde aparecerá el jugador.
 //
 // teleportDirection
-// Dirección inicial del personaje tras el teletransporte.
+// Dirección inicial del personaje.
+//
+// interactionTileX
+// interactionTileY
+// Casilla exacta a la que debe desplazarse el
+// personaje antes de ejecutar la interacción.
+// Permite definir manualmente el punto de acceso
+// para puertas u objetos especiales.
 //
 // =======================================================
 
@@ -128,15 +129,13 @@ window.ObjectLibrary = [
 
     requiredItem: "key",
 
-    interactionMode: "front",
-    interactionOffsetX: 0,
-    interactionOffsetY: -12,
-    teleportMode: "inside",
-
     teleportTo: "map2",
     teleportX: 3,
     teleportY: 4,
     teleportDirection: "right",
+
+    interactionTileX: 4,
+    interactionTileY: 5,
   },
 
   // ---------------------------------------------
@@ -148,6 +147,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta principal",
+
+    description: "Es una puerta.",
 
     sprite: "door_1.png",
 
@@ -169,16 +170,21 @@ window.ObjectLibrary = [
     teleportX: 8,
     teleportY: 3,
     teleportDirection: "down",
-  },
 
+    interactionTileX: 4,
+    interactionTileY: 4,
+  },
   // ---------------------------------------------
   // Door 2 - Cuarto de estar / Entrada - map 3
   // ---------------------------------------------
   {
     id: "door_2",
-    type: "door",
     doorPair: "door_pair_2",
+
+    type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_2.png",
 
@@ -200,6 +206,9 @@ window.ObjectLibrary = [
     teleportX: 3,
     teleportY: 4,
     teleportDirection: "right",
+
+    interactionTileX: 28,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------
@@ -211,6 +220,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_3.png",
 
@@ -232,11 +243,13 @@ window.ObjectLibrary = [
     teleportX: 28,
     teleportY: 4,
     teleportDirection: "left",
+
+    interactionTileX: 4,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------
   // Door 4 - Trastero / Entrada - map 3
-  // Estado Inicial -> cerrado
   // ---------------------------------------------
   {
     id: "door_4",
@@ -244,6 +257,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_4.png",
 
@@ -257,6 +272,7 @@ window.ObjectLibrary = [
 
     locked: true,
     opened: false,
+
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -264,6 +280,9 @@ window.ObjectLibrary = [
     teleportX: 7,
     teleportY: 4,
     teleportDirection: "down",
+
+    interactionTileX: 8,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------
@@ -275,6 +294,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_5.png",
 
@@ -288,6 +309,7 @@ window.ObjectLibrary = [
 
     locked: true,
     opened: false,
+
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -295,6 +317,9 @@ window.ObjectLibrary = [
     teleportX: 7,
     teleportY: 4,
     teleportDirection: "down",
+
+    interactionTileX: 8,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------
@@ -306,6 +331,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_6.png",
 
@@ -326,6 +353,9 @@ window.ObjectLibrary = [
     teleportX: 7,
     teleportY: 4,
     teleportDirection: "down",
+
+    interactionTileX: 20,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------
@@ -337,6 +367,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_7.png",
 
@@ -357,6 +389,9 @@ window.ObjectLibrary = [
     teleportX: 19,
     teleportY: 4,
     teleportDirection: "down",
+
+    interactionTileX: 8,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------
@@ -368,6 +403,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_8.png",
 
@@ -388,6 +425,9 @@ window.ObjectLibrary = [
     teleportX: 8,
     teleportY: 3,
     teleportDirection: "down",
+
+    interactionTileX: 27,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------
@@ -399,6 +439,8 @@ window.ObjectLibrary = [
     doorPair: "door_pair_5",
     type: "door",
     name: "Puerta",
+
+    description: "Es una puerta.",
 
     sprite: "door_9.png",
 
@@ -419,6 +461,9 @@ window.ObjectLibrary = [
     teleportX: 26,
     teleportY: 4,
     teleportDirection: "down",
+
+    interactionTileX: 9,
+    interactionTileY: 3,
   },
 
   // ---------------------------------------------
