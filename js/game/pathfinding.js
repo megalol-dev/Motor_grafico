@@ -162,6 +162,17 @@ function createPathToTile(
     FOOT_OFFSET_Y,
   );
 
+  // ---------------------------------------------------
+  // Ya estamos en la casilla destino
+  // ---------------------------------------------------
+  if (startTile.col === targetCol && startTile.row === targetRow) {
+    state.path = [];
+    state.pathIndex = 0;
+    state.target.active = false;
+
+    return true;
+  }
+
   const path = PathfindingManager.findPathAStar(
     startTile.col,
     startTile.row,

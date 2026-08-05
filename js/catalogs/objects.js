@@ -129,6 +129,8 @@ window.ObjectLibrary = [
     requiredItem: "key",
 
     interactionMode: "front",
+    interactionOffsetX: 0,
+    interactionOffsetY: -12,
     teleportMode: "inside",
 
     teleportTo: "map2",

@@ -1,7 +1,47 @@
+// =======================================================
+// PLAYER CONTROLLER
+// =======================================================
+//
+// Gestiona todo el movimiento del personaje:
+//
+// - Seguimiento de rutas calculadas por A*.
+// - Movimiento directo hacia destinos.
+// - Finalización de interacciones pendientes.
+// - Activación de teletransportes.
+//
+// Este módulo no mantiene estado propio.
+// Toda la información necesaria se recibe desde
+// GameModule mediante un objeto de contexto,
+// evitando depender de variables globales.
+//
+// =======================================================
+
 // -------------------------------------------------------
 // MOVIMIENTO SIGUIENDO UNA RUTA (A*)
 // -------------------------------------------------------
-function updatePlayerByPath(delta) {
+function updatePlayerByPath(delta, context) {
+  const {
+    state,
+    mapData,
+    actionLine,
+    currentMapName,
+    ctx,
+    canvas,
+    mapImageLoaded,
+    mapImage,
+    objectSprites,
+    playerSprites,
+    MAP_SCALE,
+    PLAYER_SCALE,
+    FRAME_WIDTH,
+    FRAME_HEIGHT,
+    FOOT_OFFSET_Y,
+    TARGET_REACHED_DIST,
+    getVerbLabel,
+    getActiveCharacter,
+    changeMap,
+  } = context;
+
   const player = getActiveCharacter();
 
   if (state.path.length === 0 || state.pathIndex >= state.path.length) {
@@ -12,7 +52,6 @@ function updatePlayerByPath(delta) {
   const node = state.path[state.pathIndex];
 
   const targetX = node.col * mapData.tileWidth + mapData.tileWidth / 2;
-
   const targetY = (node.row + 1) * mapData.tileHeight + FOOT_OFFSET_Y;
 
   const dx = targetX - player.x;
@@ -103,120 +142,140 @@ function updatePlayerByPath(delta) {
   player.moving = true;
 }
 
-
 // -------------------------------------------------------
-  // MOVIMIENTO POR DESTINO DE RATÓN
-  // -------------------------------------------------------
-  function updatePlayerByMouseTarget(delta) {
-    // personaje actualmente controlado
-    const player = getActiveCharacter();
+// MOVIMIENTO POR DESTINO DE RATÓN
+// -------------------------------------------------------
+function updatePlayerByMouseTarget(delta, context) {
+  const {
+    state,
+    mapData,
+    actionLine,
+    currentMapName,
+    ctx,
+    canvas,
+    mapImageLoaded,
+    mapImage,
+    objectSprites,
+    playerSprites,
+    MAP_SCALE,
+    PLAYER_SCALE,
+    FRAME_WIDTH,
+    FRAME_HEIGHT,
+    FOOT_OFFSET_Y,
+    TARGET_REACHED_DIST,
+    getVerbLabel,
+    getActiveCharacter,
+    changeMap,
+  } = context;
 
-    if (!state.target.active) {
-      player.moving = false;
-      return;
-    }
+  const player = getActiveCharacter();
 
-    const dx = state.target.x - player.x;
-    const dy = state.target.y - player.y;
+  if (!state.target.active) {
+    player.moving = false;
+    return;
+  }
 
-    const distance = Math.hypot(dx, dy);
+  const dx = state.target.x - player.x;
+  const dy = state.target.y - player.y;
 
-    // ---------------------------------------------------
-    // HA LLEGADO AL DESTINO
-    // ---------------------------------------------------
-    if (distance <= TARGET_REACHED_DIST) {
-      state.target.active = false;
-      player.moving = false;
+  const distance = Math.hypot(dx, dy);
 
-      // ejecutar interacción pendiente
-      if (state.pendingInteraction) {
-        InteractionManager.handleObjectInteraction(
-          state.pendingInteraction,
-          state,
-          actionLine,
-          currentMapName,
-          mapData,
-          ctx,
-          canvas,
-          mapImageLoaded,
-          mapImage,
-          objectSprites,
-          playerSprites,
-          MAP_SCALE,
-          PLAYER_SCALE,
-          FRAME_WIDTH,
-          FRAME_HEIGHT,
-          getVerbLabel,
-        );
+  // ---------------------------------------------------
+  // HA LLEGADO AL DESTINO
+  // ---------------------------------------------------
+  if (distance <= TARGET_REACHED_DIST) {
+    state.target.active = false;
+    player.moving = false;
 
-        state.pendingInteraction = null;
-      }
+    // ejecutar interacción pendiente
+    if (state.pendingInteraction) {
+      InteractionManager.handleObjectInteraction(
+        state.pendingInteraction,
+        state,
+        actionLine,
+        currentMapName,
+        mapData,
+        ctx,
+        canvas,
+        mapImageLoaded,
+        mapImage,
+        objectSprites,
+        playerSprites,
+        MAP_SCALE,
+        PLAYER_SCALE,
+        FRAME_WIDTH,
+        FRAME_HEIGHT,
+        getVerbLabel,
+      );
 
-      // ---------------------------------------------------
-      // HOTSPOT
-      // ---------------------------------------------------
-      if (state.pendingHotspot) {
-        InteractionManager.handleHotspotInteraction(
-          state.pendingHotspot,
-          state,
-          actionLine,
-        );
-
-        state.pendingHotspot = null;
-      }
-
-      // ---------------------------------------------------
-      // TELETRANSPORTE PENDIENTE
-      // ---------------------------------------------------
-      if (state.pendingTeleport) {
-        changeMap(
-          state.pendingTeleport.teleportTo,
-          state.pendingTeleport.teleportX,
-          state.pendingTeleport.teleportY,
-          state.pendingTeleport.teleportDirection ?? "down",
-        );
-
-        state.pendingTeleport = null;
-      }
-
-      return;
+      state.pendingInteraction = null;
     }
 
     // ---------------------------------------------------
-    // SEGURIDAD EXTRA
+    // HOTSPOT
     // ---------------------------------------------------
-    if (distance < 0.001) {
-      state.target.active = false;
-      player.moving = false;
+    if (state.pendingHotspot) {
+      InteractionManager.handleHotspotInteraction(
+        state.pendingHotspot,
+        state,
+        actionLine,
+      );
 
-      return;
+      state.pendingHotspot = null;
     }
 
-    const moveX = dx / distance;
-    const moveY = dy / distance;
-
-    MovementManager.updateDirectionFromVector(moveX, moveY, player);
-
-    // dirección visual del personaje activo
-
-    const step = player.speed * delta;
-    const actualStep = Math.min(step, distance);
-
-    const nextX = player.x + moveX * actualStep;
-    const nextY = player.y + moveY * actualStep;
-
-    const oldX = player.x;
-    const oldY = player.y;
-
     // ---------------------------------------------------
-    // MOVIMIENTO
+    // TELETRANSPORTE PENDIENTE
     // ---------------------------------------------------
+    if (state.pendingTeleport) {
+      changeMap(
+        state.pendingTeleport.teleportTo,
+        state.pendingTeleport.teleportX,
+        state.pendingTeleport.teleportY,
+        state.pendingTeleport.teleportDirection ?? "down",
+      );
 
-    MovementManager.tryMovePlayer(nextX, nextY, player, mapData, FOOT_OFFSET_Y);
+      state.pendingTeleport = null;
+    }
 
-    const movedDistance = Math.hypot(player.x - oldX, player.y - oldY);
+    return;
+  }
 
-    /*
+  // ---------------------------------------------------
+  // SEGURIDAD EXTRA
+  // ---------------------------------------------------
+  if (distance < 0.001) {
+    state.target.active = false;
+    player.moving = false;
+
+    return;
+  }
+
+  const moveX = dx / distance;
+  const moveY = dy / distance;
+
+  MovementManager.updateDirectionFromVector(moveX, moveY, player);
+
+  // dirección visual del personaje activo
+
+  const step = player.speed * delta;
+  const actualStep = Math.min(step, distance);
+
+  const nextX = player.x + moveX * actualStep;
+  const nextY = player.y + moveY * actualStep;
+
+  const oldX = player.x;
+  const oldY = player.y;
+
+  // ---------------------------------------------------
+  // MOVIMIENTO
+  // ---------------------------------------------------
+
+  MovementManager.tryMovePlayer(nextX, nextY, player, mapData, FOOT_OFFSET_Y);
+
+  const movedDistance = Math.hypot(player.x - oldX, player.y - oldY);
+
+  /*
         if (movedDistance < BLOCKED_EPSILON) {
     
             state.target.active = false;
@@ -226,27 +285,35 @@ function updatePlayerByPath(delta) {
         }
         */
 
-    player.moving = true;
+  player.moving = true;
 }
-  
- // -------------------------------------------------------
-  // COMPRUEBA SI EL PERSONAJE ESTÁ PISANDO UN PORTAL
-  // -------------------------------------------------------
-  function checkTeleportTrigger() {
-    const portal = InteractionManager.getTeleportUnderPlayer(
-      getActiveCharacter(),
-      mapData,
-      FOOT_OFFSET_Y,
-    );
 
-    if (!portal) {
-      return;
-    }
+// -------------------------------------------------------
+// COMPRUEBA SI EL PERSONAJE ESTÁ PISANDO UN PORTAL
+// -------------------------------------------------------
+function checkTeleportTrigger(context) {
+  const { mapData, FOOT_OFFSET_Y, getActiveCharacter, changeMap } = context;
 
-    changeMap(
-      portal.teleportTo,
-      portal.teleportX,
-      portal.teleportY,
-      portal.teleportDirection ?? "down",
-    );
+  const portal = InteractionManager.getTeleportUnderPlayer(
+    getActiveCharacter(),
+    mapData,
+    FOOT_OFFSET_Y,
+  );
+
+  if (!portal) {
+    return;
   }
+
+  changeMap(
+    portal.teleportTo,
+    portal.teleportX,
+    portal.teleportY,
+    portal.teleportDirection ?? "down",
+  );
+}
+
+window.PlayerController = {
+  updatePlayerByPath,
+  updatePlayerByMouseTarget,
+  checkTeleportTrigger,
+};
