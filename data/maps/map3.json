@@ -236,7 +236,7 @@
       "teleportDirection": "left",
       "interactionMode": "inside",
       "teleportMode": "inside",
-      "interactionTileX": 4,
+      "interactionTileX": 3,
       "interactionTileY": 4,
       "typeId": "door_3",
       "doorPair": "door_pair_2",

@@ -276,7 +276,7 @@
       "teleportDirection": "right",
       "interactionMode": "front",
       "teleportMode": "front",
-      "interactionTileX": 7,
+      "interactionTileX": 8,
       "interactionTileY": 3,
       "portal": {
         "x": 169,

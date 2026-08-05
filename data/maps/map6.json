@@ -236,7 +236,7 @@
       "teleportDirection": "down",
       "interactionMode": "inside",
       "teleportMode": "inside",
-      "interactionTileX": 9,
+      "interactionTileX": 8,
       "interactionTileY": 3,
       "typeId": "door_9",
       "doorPair": "door_pair_5",

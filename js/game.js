@@ -57,7 +57,7 @@ window.GameModule = (() => {
   // AJUSTES DE MOVIMIENTO Y COLISIÓN
   // -------------------------------------------------------
   const FOOT_OFFSET_Y = 6;
-  const TARGET_REACHED_DIST = 10;
+  const TARGET_REACHED_DIST = 5;
   const BLOCKED_EPSILON = 0.05;
 
   // -------------------------------------------------------

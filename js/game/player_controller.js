@@ -74,10 +74,35 @@ function updatePlayerByPath(delta, context) {
     // ¿HEMOS TERMINADO LA RUTA?
     // -----------------------------------------
     if (state.pathIndex >= state.path.length) {
+      // Centrar exactamente al personaje en la última casilla de la ruta BETA
+      //player.x = targetX;
+      //player.y = targetY;
       state.path = [];
       state.pathIndex = 0;
 
       player.moving = false;
+
+      // ---------------------------------------------------------
+      // Ajustar la posición final al centro exacto de la casilla
+      // solo al abrir una puerta.
+      // ---------------------------------------------------------
+      if (
+        state.currentVerb.toLowerCase() === "open" &&
+        state.pendingInteraction?.type === "door" &&
+        Number.isInteger(state.pendingInteraction.interactionTileX) &&
+        Number.isInteger(state.pendingInteraction.interactionTileY)
+      ) {
+        player.x =
+          state.pendingInteraction.interactionTileX * mapData.tileWidth +
+          mapData.tileWidth / 2;
+
+        const FOOT_POSITION_IN_TILE = 0.55;
+
+        player.y =
+          state.pendingInteraction.interactionTileY * mapData.tileHeight +
+          mapData.tileHeight * FOOT_POSITION_IN_TILE +
+          FOOT_OFFSET_Y;
+      }
 
       if (state.pendingInteraction) {
         InteractionManager.handleObjectInteraction(

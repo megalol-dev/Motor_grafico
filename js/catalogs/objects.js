@@ -134,8 +134,8 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "right",
 
-    interactionTileX: 4,
-    interactionTileY: 5,
+    interactionTileX: 8,
+    interactionTileY: 3,
   },
 
   // ---------------------------------------------
@@ -171,7 +171,7 @@ window.ObjectLibrary = [
     teleportY: 3,
     teleportDirection: "down",
 
-    interactionTileX: 4,
+    interactionTileX: 3,
     interactionTileY: 4,
   },
   // ---------------------------------------------
@@ -244,7 +244,7 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "left",
 
-    interactionTileX: 4,
+    interactionTileX: 3,
     interactionTileY: 4,
   },
 
@@ -281,7 +281,7 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "down",
 
-    interactionTileX: 8,
+    interactionTileX: 7,
     interactionTileY: 4,
   },
 
@@ -318,7 +318,7 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "down",
 
-    interactionTileX: 8,
+    interactionTileX: 7,
     interactionTileY: 4,
   },
 
@@ -354,7 +354,7 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "down",
 
-    interactionTileX: 20,
+    interactionTileX: 19,
     interactionTileY: 4,
   },
 
@@ -390,7 +390,7 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "down",
 
-    interactionTileX: 8,
+    interactionTileX: 7,
     interactionTileY: 4,
   },
 
@@ -426,7 +426,7 @@ window.ObjectLibrary = [
     teleportY: 3,
     teleportDirection: "down",
 
-    interactionTileX: 27,
+    interactionTileX: 26,
     interactionTileY: 4,
   },
 
@@ -462,7 +462,7 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "down",
 
-    interactionTileX: 9,
+    interactionTileX: 8,
     interactionTileY: 3,
   },
 
