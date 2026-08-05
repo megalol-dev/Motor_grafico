@@ -26,3 +26,12 @@ Calcular casilla de interacción
     ▼         ▼
  Caminar   "No encuentro
             el camino"
+
+
+
+---------------------------------------
+
+Implementar en editor del motor graficos el campo de descripcion para objetos 
+como items recogibles o puertas
+El sistemas ya esta adapatado en game/ events.js para que al usar "ver" salte ya
+la descripcion.

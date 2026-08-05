@@ -88,6 +88,8 @@ window.ObjectLibrary = [
     type: "item",
     name: "Llave",
 
+    description: "Una pequeña llave de hierro.",
+
     sprite: "001_key.png",
 
     defaultSpriteWidth: 16,
@@ -108,6 +110,8 @@ window.ObjectLibrary = [
 
     type: "door",
     name: "Puerta principal",
+
+    description: "Una pesada puerta de madera.",
 
     sprite: "door_0.png",
 

@@ -65,7 +65,6 @@ window.GameModule = (() => {
   // -------------------------------------------------------
   const state = {
     currentVerb: "Walk to",
-    keys: new Set(),
     lastTime: 0,
     messageTimeout: null,
 
@@ -547,7 +546,7 @@ window.GameModule = (() => {
   // -------------------------------------------------------
   function stop() {
     running = false;
-    state.keys.clear();
+
     state.player.moving = false;
     state.player.animFrame = 0;
     state.player.animTimer = 0;
@@ -555,45 +554,167 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
-  // EVENTOS DEL JUEGO
+  // EVENTOS DE LOS BOTONES DE PERSONAJES
   // -------------------------------------------------------
-  function bindGameEvents() {
-    // ---------------------------------------------------
-    // TECLADO
-    // ---------------------------------------------------
-    document.addEventListener("keydown", (event) => {
+  function bindCharacterButtons() {
+    const playerButtons = document.querySelectorAll(".player-btn");
+
+    playerButtons.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const selected = button.dataset.character;
+
+        if (!selected) return;
+
+        // cancelar movimiento anterior
+        state.target.active = false;
+        state.pendingInteraction = null;
+
+        // parar todos los personajes
+        state.player.moving = false;
+
+        state.companions.forEach((companion) => {
+          companion.moving = false;
+        });
+
+        state.activeCharacter = selected;
+
+        const player = getActiveCharacter();
+
+        changeMap(
+          player.currentMap,
+          Math.floor(player.x / mapData.tileWidth),
+          Math.floor(player.y / mapData.tileHeight) - 1,
+          player.direction,
+        );
+
+        state.target.active = false;
+
+        InventoryManager.refreshInventoryUI(state, actionLine);
+      });
+    });
+  }
+
+  // -------------------------------------------------------
+  // EVENTOS DE LOS BOTONES DE VERBOS
+  // -------------------------------------------------------
+  function bindVerbButtons() {
+    verbButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const verb = window.VerbLibrary.find(
+          (v) => v.id === button.dataset.verb,
+        );
+
+        if (!verb) {
+          return;
+        }
+
+        state.currentVerb = verb.id;
+
+        if (state.currentVerb !== "use") {
+          state.selectedInventoryItem = null;
+          InventoryManager.refreshInventoryUI(state, actionLine);
+        }
+
+        if (actionLine) {
+          actionLine.textContent = `${verb.label} ...`;
+        }
+      });
+    });
+  }
+
+  // -------------------------------------------------------
+  // EVENTOS DE HOVER SOBRE EL CANVAS
+  // -------------------------------------------------------
+  function bindCanvasHover() {
+    canvas.addEventListener("mousemove", (event) => {
       const isGameVisible = document
         .getElementById("game-screen")
         ?.classList.contains("active");
-      if (!isGameVisible) return;
 
-      const key = event.key.toLowerCase();
+      if (!isGameVisible || !mapData) {
+        return;
+      }
 
-      if (
-        [
-          "arrowup",
-          "arrowdown",
-          "arrowleft",
-          "arrowright",
-          "w",
-          "a",
-          "s",
-          "d",
-        ].includes(key)
-      ) {
-        state.keys.add(key);
-        state.target.active = false;
-        state.path = [];
-        state.pathIndex = 0;
+      const worldPoint = getWorldPointFromClick(event);
 
-        event.preventDefault();
+      if (!worldPoint) {
+        return;
+      }
+
+      const hoveredObject = InteractionManager.getObjectAt(
+        worldPoint.x,
+        worldPoint.y,
+        mapData,
+      );
+
+      const hoveredHotspot = InteractionManager.getHotspotAt(
+        worldPoint.x,
+        worldPoint.y,
+        mapData,
+      );
+
+      // ---------------------------------------------------
+      // OBJETO BAJO EL RATÓN
+      // ---------------------------------------------------
+      if (hoveredObject) {
+        if (actionLine) {
+          if (
+            state.currentVerb.toLowerCase() === "use" &&
+            state.selectedInventoryItem
+          ) {
+            actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hoveredObject.name}`;
+          } else {
+            actionLine.textContent = `${state.currentVerb} ${hoveredObject.name}`;
+          }
+        }
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // HOTSPOT BAJO EL RATÓN
+      // ---------------------------------------------------
+      if (hoveredHotspot) {
+        const hotspotItem =
+          InteractionManager.getHotspotLibraryItem(hoveredHotspot);
+
+        if (hotspotItem && actionLine) {
+          if (
+            state.currentVerb.toLowerCase() === "use" &&
+            state.selectedInventoryItem
+          ) {
+            actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hotspotItem.name}`;
+          } else {
+            actionLine.textContent = `${state.currentVerb} ${hotspotItem.name}`;
+          }
+        }
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // NO HAY ELEMENTO INTERACTIVO
+      // ---------------------------------------------------
+      if (actionLine) {
+        if (
+          state.currentVerb.toLowerCase() === "use" &&
+          state.selectedInventoryItem
+        ) {
+          actionLine.textContent = `Use ${state.selectedInventoryItem.name} with...`;
+        } else {
+          actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
+        }
       }
     });
+  }
 
-    document.addEventListener("keyup", (event) => {
-      state.keys.delete(event.key.toLowerCase());
-    });
-
+  // -------------------------------------------------------
+  // EVENTOS DEL JUEGO
+  // -------------------------------------------------------
+  function bindGameEvents() {
     // ---------------------------------------------------
     // CLICK EN EL CANVAS
     // ---------------------------------------------------
@@ -651,16 +772,18 @@ window.GameModule = (() => {
         // ---------------------------------------------------
         // WHAT IS -> NO CAMINAR
         // ---------------------------------------------------
-        if (verb === "what is") {
-          InteractionManager.showTemporaryMessage(
-            clickedObject.description,
-            state,
-            actionLine,
-            2000,
-          );
+       if (verb === "what is") {
+         console.log(clickedObject);
 
-          return;
-        }
+         InteractionManager.showTemporaryMessage(
+           clickedObject.description,
+           state,
+           actionLine,
+           2000,
+         );
+
+         return;
+       }
 
         // ---------------------------------------------------
         // PICK UP -> CAMINAR HASTA EL OBJETO
@@ -874,7 +997,6 @@ window.GameModule = (() => {
         state.pendingInteraction = clickedObject;
 
         return;
-
       }
 
       // ---------------------------------------------------
@@ -995,155 +1117,9 @@ window.GameModule = (() => {
         }
       }
     });
-
-    // ---------------------------------------------------
-    // HOVER SOBRE ELEMENTOS INTERACTIVOS
-    // ---------------------------------------------------
-    canvas.addEventListener("mousemove", (event) => {
-      const isGameVisible = document
-        .getElementById("game-screen")
-        ?.classList.contains("active");
-
-      if (!isGameVisible || !mapData) {
-        return;
-      }
-
-      const worldPoint = getWorldPointFromClick(event);
-
-      if (!worldPoint) {
-        return;
-      }
-
-      const hoveredObject = InteractionManager.getObjectAt(
-        worldPoint.x,
-        worldPoint.y,
-        mapData,
-      );
-      const hoveredHotspot = InteractionManager.getHotspotAt(
-        worldPoint.x,
-        worldPoint.y,
-        mapData,
-      );
-
-      // ---------------------------------------------------
-      // OBJETO BAJO EL RATÓN
-      // ---------------------------------------------------
-      if (hoveredObject) {
-        if (actionLine) {
-          if (
-            state.currentVerb.toLowerCase() === "use" &&
-            state.selectedInventoryItem
-          ) {
-            actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hoveredObject.name}`;
-          } else {
-            actionLine.textContent = `${state.currentVerb} ${hoveredObject.name}`;
-          }
-        }
-
-        return;
-      }
-
-      // ---------------------------------------------------
-      // HOTSPOT BAJO EL RATÓN
-      // ---------------------------------------------------
-      if (hoveredHotspot) {
-        const hotspotItem =
-          InteractionManager.getHotspotLibraryItem(hoveredHotspot);
-
-        if (hotspotItem && actionLine) {
-          if (
-            state.currentVerb.toLowerCase() === "use" &&
-            state.selectedInventoryItem
-          ) {
-            actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hotspotItem.name}`;
-          } else {
-            actionLine.textContent = `${state.currentVerb} ${hotspotItem.name}`;
-          }
-        }
-
-        return;
-      }
-
-      // ---------------------------------------------------
-      // NO HAY ELEMENTO INTERACTIVO
-      // ---------------------------------------------------
-      if (actionLine) {
-        if (
-          state.currentVerb.toLowerCase() === "use" &&
-          state.selectedInventoryItem
-        ) {
-          actionLine.textContent = `Use ${state.selectedInventoryItem.name} with...`;
-        }
-      } else {
-        actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
-      }
-    });
-
-    // ---------------------------------------------------
-    // BOTONES DE VERBOS
-    // ---------------------------------------------------
-    verbButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const verb = window.VerbLibrary.find(
-          (v) => v.id === button.dataset.verb,
-        );
-
-        if (!verb) {
-          return;
-        }
-
-        state.currentVerb = verb.id;
-
-        if (state.currentVerb !== "use") {
-          state.selectedInventoryItem = null;
-          InventoryManager.refreshInventoryUI(state, actionLine);
-        }
-
-        if (actionLine) {
-          actionLine.textContent = `${verb.label} ...`;
-        }
-      });
-    });
-
-    // ---------------------------------------------------
-    // BOTONES DE PERSONAJES
-    // ---------------------------------------------------
-    const playerButtons = document.querySelectorAll(".player-btn");
-
-    playerButtons.forEach((button) => {
-      button.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const selected = button.dataset.character;
-
-        if (!selected) return;
-
-        // cancelar movimiento anterior
-        state.target.active = false;
-        state.pendingInteraction = null;
-        state.keys.clear();
-
-        // parar todos los personajes
-        state.player.moving = false;
-        state.companions.forEach((companion) => {
-          companion.moving = false;
-        });
-
-        state.activeCharacter = selected;
-        const player = getActiveCharacter();
-
-        changeMap(
-          player.currentMap,
-          Math.floor(player.x / mapData.tileWidth),
-          Math.floor(player.y / mapData.tileHeight) - 1,
-          player.direction,
-        );
-        state.target.active = false;
-
-        InventoryManager.refreshInventoryUI(state, actionLine);
-      });
-    });
+    bindCanvasHover();
+    bindVerbButtons();
+    bindCharacterButtons();
   }
 
   // -------------------------------------------------------
@@ -1209,18 +1185,16 @@ window.GameModule = (() => {
   function update(delta) {
     if (!mapData) return;
 
-    const usedKeyboard = updatePlayerByKeyboard(delta);
-
-    if (!usedKeyboard) {
-      if (state.path.length > 0) {
-        updatePlayerByPath(delta);
-      } else {
-        updatePlayerByMouseTarget(delta);
-      }
+    if (state.path.length > 0) {
+      updatePlayerByPath(delta);
+    } else {
+      updatePlayerByMouseTarget(delta);
     }
 
     MovementManager.updatePlayerAnimation(delta, getActiveCharacter());
+
     checkTeleportTrigger();
+
     CameraManager.updateCamera(
       getActiveCharacter(),
       state,
@@ -1250,49 +1224,6 @@ window.GameModule = (() => {
       portal.teleportY,
       portal.teleportDirection ?? "down",
     );
-  }
-
-  // -------------------------------------------------------
-  // MOVIMIENTO POR TECLADO
-  // -------------------------------------------------------
-  function updatePlayerByKeyboard(delta) {
-    const player = getActiveCharacter();
-
-    let moveX = 0;
-    let moveY = 0;
-
-    if (state.keys.has("arrowleft") || state.keys.has("a")) moveX -= 1;
-    if (state.keys.has("arrowright") || state.keys.has("d")) moveX += 1;
-    if (state.keys.has("arrowup") || state.keys.has("w")) moveY -= 1;
-    if (state.keys.has("arrowdown") || state.keys.has("s")) moveY += 1;
-
-    if (moveX === 0 && moveY === 0) {
-      return false;
-    }
-
-    const length = Math.hypot(moveX, moveY) || 1;
-
-    moveX /= length;
-    moveY /= length;
-
-    MovementManager.updateDirectionFromVector(moveX, moveY, player);
-
-    const step = player.speed * delta;
-
-    const nextX = player.x + moveX * step;
-    const nextY = player.y + moveY * step;
-
-    const oldX = player.x;
-    const oldY = player.y;
-
-    // movimiento libre actual
-    MovementManager.tryMovePlayer(nextX, nextY, player, mapData, FOOT_OFFSET_Y);
-
-    const movedDistance = Math.hypot(player.x - oldX, player.y - oldY);
-
-    player.moving = movedDistance > BLOCKED_EPSILON;
-
-    return true;
   }
 
   // -------------------------------------------------------
