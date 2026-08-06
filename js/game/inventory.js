@@ -116,9 +116,13 @@ function handlePickUp(obj, state, actionLine, currentMapName) {
 
   InventoryManager.refreshInventoryUI(state, actionLine);
 
-  if (actionLine) {
-    actionLine.textContent = `Has cogido ${obj.name}.`;
-  }
+  InteractionManager.showTemporaryMessage(
+    `Has cogido ${obj.name}.`,
+    state,
+    actionLine,
+  );
+
+  EventsManager.selectDefaultVerb(state, actionLine, true);
 
   return;
 }

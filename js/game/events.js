@@ -81,11 +81,16 @@ function bindVerbButtons(verbButtons, state, actionLine) {
         return;
       }
 
+      // Quitar selección anterior
+      verbButtons.forEach((btn) => btn.classList.remove("active-verb"));
+
+      // Activar el nuevo
+      button.classList.add("active-verb");
+
       state.currentVerb = verb.id;
 
       if (state.currentVerb !== "use") {
         state.selectedInventoryItem = null;
-
         InventoryManager.refreshInventoryUI(state, actionLine);
       }
 
@@ -95,6 +100,25 @@ function bindVerbButtons(verbButtons, state, actionLine) {
     });
   });
 }
+
+function selectDefaultVerb(state, actionLine, keepMessage = false) {
+  state.currentVerb = "Walk to";
+
+  const verbButtons = document.querySelectorAll(".verb-btn");
+
+  verbButtons.forEach((btn) => {
+    btn.classList.remove("active-verb");
+
+    if (btn.dataset.verb === "Walk to") {
+      btn.classList.add("active-verb");
+    }
+  });
+
+  if (!keepMessage && actionLine) {
+    actionLine.textContent = "Walk to ...";
+  }
+}
+
 
 // -------------------------------------------------------
 // EVENTOS DE HOVER SOBRE EL CANVAS
@@ -108,6 +132,11 @@ function bindCanvasHover(
   getVerbLabel,
 ) {
   canvas.addEventListener("mousemove", (event) => {
+
+    if (state.messageTimeout) {
+      return;
+    }
+
     const isGameVisible = document
       .getElementById("game-screen")
       ?.classList.contains("active");
@@ -195,26 +224,15 @@ function bindCanvasHover(
 // CANCELA UN MENSAJE TEMPORAL SI EXISTE <refactor>
 // -------------------------------------------------------
 function clearTemporaryMessage(state, actionLine, getVerbLabel) {
-  if (state.messageTimeout) {
-    clearTimeout(state.messageTimeout);
-    state.messageTimeout = null;
-
-    if (actionLine) {
-      actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
-    }
+  if (!state.messageTimeout) {
+    return;
   }
-}
 
-// -------------------------------------------------------
-// GESTIONA EL VERBO WHAT IS SOBRE OBJETOS <refactor>
-// -------------------------------------------------------
-function handleObjectWhatIs(obj, state, actionLine) {
-  InteractionManager.showTemporaryMessage(
-    obj.description,
-    state,
-    actionLine,
-    2000,
-  );
+  state.messageTimeout = null;
+
+  if (actionLine) {
+    actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
+  }
 }
 
 // -------------------------------------------------------
@@ -257,7 +275,6 @@ function prepareObjectInteraction(
       `No puedo llegar a ${clickedObject.name}`,
       state,
       actionLine,
-      2000,
     );
 
     return false;
@@ -277,7 +294,6 @@ function prepareObjectInteraction(
       "No encuentro un camino.",
       state,
       actionLine,
-      2000,
     );
 
     return false;
@@ -325,11 +341,17 @@ function handleClickedObject(
   // ---------------------------------------------------
   // WHAT IS
   // ---------------------------------------------------
-  if (verb === "what is") {
-    handleObjectWhatIs(clickedObject, state, actionLine);
+ if (verb === "what is") {
+   InteractionManager.showTemporaryMessage(
+     clickedObject.description,
+     state,
+     actionLine,
+   );
 
-    return;
-  }
+   EventsManager.selectDefaultVerb(state, actionLine, true);
+
+   return;
+ }
 
   // ---------------------------------------------------
   // PICK UP
@@ -448,11 +470,11 @@ function handleClickedHotspot(
 
   if (!targetTile) {
     InteractionManager.showTemporaryMessage(
-      "No puedo llegar ahí.",
-      state,
-      actionLine,
-      2000,
-    );
+    "No encuentro un camino.",
+    state,
+    actionLine,
+
+);
 
     return;
   }
@@ -468,11 +490,10 @@ function handleClickedHotspot(
     )
   ) {
     InteractionManager.showTemporaryMessage(
-      "No encuentro un camino.",
-      state,
-      actionLine,
-      2000,
-    );
+    "No encuentro un camino.",
+    state,
+    actionLine,
+);
 
     return;
   }
@@ -526,11 +547,10 @@ function handleGroundClick(
     )
   ) {
     InteractionManager.showTemporaryMessage(
-      "No encuentro un camino.",
-      state,
-      actionLine,
-      2000,
-    );
+    "No encuentro un camino.",
+    state,
+    actionLine,
+);
 
     return;
   }
@@ -544,11 +564,7 @@ function handleGroundClick(
     state.currentVerb.toLowerCase() !== "use" ||
     !state.selectedInventoryItem
   ) {
-    state.currentVerb = "Walk to";
-
-    if (actionLine) {
-      actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
-    }
+    EventsManager.selectDefaultVerb(state, actionLine);
   }
 }
 
@@ -585,8 +601,6 @@ function bindGameEvents(
     if (!isGameVisible || !mapData) {
       return;
     }
-
-    clearTemporaryMessage(state, actionLine, getVerbLabel);
 
     const worldPoint = getWorldPointFromClick(event);
 
@@ -663,19 +677,19 @@ function bindGameEvents(
   );
 }
 
-// ---------------------------------------------------
-// Manager
-// ---------------------------------------------------
+// -------------------------------------------------------
+// MANAGER
+// -------------------------------------------------------
 window.EventsManager = {
   bindCharacterButtons,
   bindVerbButtons,
   bindCanvasHover,
   clearTemporaryMessage,
-  handleObjectWhatIs,
   prepareObjectInteraction,
   handleDefaultObjectVerb,
   handleClickedObject,
   handleClickedHotspot,
   handleGroundClick,
   bindGameEvents,
+  selectDefaultVerb,
 };

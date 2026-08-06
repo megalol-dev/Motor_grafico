@@ -167,3 +167,25 @@
     object-fit: contain;
     image-rendering: pixelated;
 }
+
+.active-verb {
+
+    border: 3px solid #ff0101;
+
+    color: #ff0000;
+
+    animation: verbGlow 0.9s infinite alternate;
+}
+
+@keyframes verbGlow {
+
+    from {
+
+        box-shadow: 0 0 10px #5d0505;
+    }
+
+    to {
+
+        box-shadow: 0 0 20px #5d0505;
+    }
+}

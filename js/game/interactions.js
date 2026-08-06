@@ -58,8 +58,6 @@ function getHotspotAt(worldX, worldY, mapData) {
   return null;
 }
 
-
-
 // -------------------------------------------------------
 // DEVUELVE LOS DATOS DEL CATÁLOGO DE UN HOTSPOT <refactor>
 // -------------------------------------------------------
@@ -76,23 +74,19 @@ function getHotspotLibraryItem(hotspot) {
 // -------------------------------------------------------
 // MUESTRA UN MENSAJE TEMPORAL EN LA ACTION LINE <refactor>
 // -------------------------------------------------------
-function showTemporaryMessage(text, state, actionLine, duration = 2000) {
-  // limpiar timeout anterior
+function showTemporaryMessage(text, state, actionLine) {
+  // Cancelar un posible temporizador antiguo
   if (state.messageTimeout) {
     clearTimeout(state.messageTimeout);
+    state.messageTimeout = null;
   }
 
   if (actionLine) {
     actionLine.textContent = text;
   }
 
-  state.messageTimeout = setTimeout(() => {
-    if (actionLine) {
-      actionLine.textContent = `${state.currentVerb} ...`;
-    }
-
-    state.messageTimeout = null;
-  }, duration);
+  // Marcar que hay un mensaje temporal activo
+  state.messageTimeout = true;
 }
 
 // -------------------------------------------------------
@@ -105,16 +99,16 @@ function handleHotspotInteraction(hotspot, state, actionLine) {
 
   const verb = state.currentVerb.toLowerCase();
 
-  // ---------------------------------------------------
+  
   // WHAT IS
-  // ---------------------------------------------------
   if (verb === "what is") {
     InteractionManager.showTemporaryMessage(
       hotspotItem.description,
       state,
       actionLine,
-      2000,
     );
+
+    EventsManager.selectDefaultVerb(state, actionLine, true);
 
     return;
   }
@@ -174,13 +168,8 @@ function handleObjectInteraction(
   // WHAT IS
   // ---------------------------------------------------
   if (verb === "what is") {
-    InteractionManager.showTemporaryMessage(
-      obj.description,
-      state,
-      actionLine,
-      2000,
-    );
-
+    InteractionManager.showTemporaryMessage(obj.description, state, actionLine);
+    EventsManager.selectDefaultVerb(state, actionLine, true);
     return;
   }
 
@@ -231,7 +220,13 @@ function handleObjectInteraction(
       state.currentVerb = "Walk to";
 
       if (actionLine) {
-        actionLine.textContent = `${obj.name} se ha abierto.`;
+        InteractionManager.showTemporaryMessage(
+  `${obj.name} se ha abierto.`,
+  state,
+  actionLine,
+);
+
+EventsManager.selectDefaultVerb(state, actionLine, true);
       }
 
       RenderManager.render(
@@ -260,6 +255,8 @@ function handleObjectInteraction(
     if (actionLine) {
       actionLine.textContent = `No puedo usar ${state.selectedInventoryItem.name} con ${obj.name}.`;
     }
+
+    EventsManager.selectDefaultVerb(state, actionLine);
 
     return;
   }
@@ -304,7 +301,13 @@ function handleObjectInteraction(
         state.player,
     );
 
-    actionLine.textContent = `${obj.name} se ha abierto.`;
+    InteractionManager.showTemporaryMessage(
+  `${obj.name} se ha abierto.`,
+  state,
+  actionLine,
+);
+
+EventsManager.selectDefaultVerb(state, actionLine, true);;
 
     return;
   }
@@ -321,10 +324,10 @@ function handleObjectInteraction(
 // Manager
 // -------------------------------------------------------
 window.InteractionManager = {
+  getObjectAt,
+  getHotspotAt,
   getHotspotLibraryItem,
   showTemporaryMessage,
   handleHotspotInteraction,
   handleObjectInteraction,
-  getObjectAt,
-  getHotspotAt,
 };
