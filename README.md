@@ -160,7 +160,7 @@ sequenceDiagram
     participant App as app.js
     participant Game as GameModule
     participant Data as JSON y sprites
-    participant Loop as requestAnimationFrame
+    participant RAF as requestAnimationFrame
     participant Managers as Gestores del motor
     participant Canvas
 
@@ -170,7 +170,7 @@ sequenceDiagram
     Game->>Managers: enlaza eventos y aplica estado persistente
     App->>Game: start()
     loop Cada frame
-        Loop->>Game: update(delta)
+        RAF->>Game: update(delta)
         Game->>Managers: movimiento, animación y cámara
         Game->>Managers: render(...)
         Managers->>Canvas: mapa, objetos y personajes
