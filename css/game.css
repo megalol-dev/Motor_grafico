@@ -101,9 +101,9 @@
 
 .verb-btn {
     background: #f3f3f3;
-    border: 3px solid #ff2f2f;
+    border: 3px solid #050505;
     border-radius: 10px;
-    color: #243dff;
+    color: #070707;
     font-family: inherit;
     font-size: clamp(12px, 1vw, 18px);
     font-weight: bold;
