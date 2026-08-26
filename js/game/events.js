@@ -18,12 +18,15 @@
 // -------------------------------------------------------
 // EVENTOS DE LOS BOTONES DE PERSONAJES
 // -------------------------------------------------------
+// -------------------------------------------------------
+// EVENTOS DE LOS BOTONES DE PERSONAJES
+// -------------------------------------------------------
 function bindCharacterButtons(
   state,
-  getMapData,
+  getCurrentMapName,
   actionLine,
   getActiveCharacter,
-  changeMap,
+  changeMapKeepingPosition,
 ) {
   const playerButtons = document.querySelectorAll(".player-btn");
 
@@ -34,35 +37,51 @@ function bindCharacterButtons(
 
       const selected = button.dataset.character;
 
-      if (!selected) return;
+      if (!selected) {
+        return;
+      }
 
-      const mapData = getMapData();
-
-      if (!mapData) return;
-
-      // cancelar movimiento anterior
+      // -----------------------------------------
+      // Cancelar acciones del personaje anterior
+      // -----------------------------------------
       state.target.active = false;
+      state.path = [];
+      state.pathIndex = 0;
       state.pendingInteraction = null;
+      state.pendingHotspot = null;
+      state.pendingTeleport = null;
 
-      // parar todos los personajes
       state.player.moving = false;
 
       state.companions.forEach((companion) => {
         companion.moving = false;
       });
 
+      // -----------------------------------------
+      // Cambiar personaje activo
+      // -----------------------------------------
       state.activeCharacter = selected;
 
       const player = getActiveCharacter();
 
-      changeMap(
-        player.currentMap,
-        Math.floor(player.x / mapData.tileWidth),
-        Math.floor(player.y / mapData.tileHeight) - 1,
-        player.direction,
-      );
+      if (!player) {
+        return;
+      }
 
-      state.target.active = false;
+      player.moving = false;
+
+      // -----------------------------------------
+      // Si está en otro mapa, cargar SU mapa
+      // conservando exactamente X / Y.
+      // -----------------------------------------
+      if (player.currentMap !== getCurrentMapName()) {
+        changeMapKeepingPosition(
+          player.currentMap,
+          player.x,
+          player.y,
+          player.direction,
+        );
+      }
 
       InventoryManager.refreshInventoryUI(state, actionLine);
     });
@@ -119,7 +138,6 @@ function selectDefaultVerb(state, actionLine, keepMessage = false) {
   }
 }
 
-
 // -------------------------------------------------------
 // EVENTOS DE HOVER SOBRE EL CANVAS
 // -------------------------------------------------------
@@ -132,7 +150,6 @@ function bindCanvasHover(
   getVerbLabel,
 ) {
   canvas.addEventListener("mousemove", (event) => {
-
     if (state.messageTimeout) {
       return;
     }
@@ -257,8 +274,6 @@ function prepareObjectInteraction(
     mapData,
   );
 
- 
-
   console.log("Puerta:", clickedObject.name);
   console.log("Casilla:", interactionTile);
   console.log(
@@ -341,17 +356,17 @@ function handleClickedObject(
   // ---------------------------------------------------
   // WHAT IS
   // ---------------------------------------------------
- if (verb === "what is") {
-   InteractionManager.showTemporaryMessage(
-     clickedObject.description,
-     state,
-     actionLine,
-   );
+  if (verb === "what is") {
+    InteractionManager.showTemporaryMessage(
+      clickedObject.description,
+      state,
+      actionLine,
+    );
 
-   EventsManager.selectDefaultVerb(state, actionLine, true);
+    EventsManager.selectDefaultVerb(state, actionLine, true);
 
-   return;
- }
+    return;
+  }
 
   // ---------------------------------------------------
   // PICK UP
@@ -470,11 +485,10 @@ function handleClickedHotspot(
 
   if (!targetTile) {
     InteractionManager.showTemporaryMessage(
-    "No encuentro un camino.",
-    state,
-    actionLine,
-
-);
+      "No encuentro un camino.",
+      state,
+      actionLine,
+    );
 
     return;
   }
@@ -490,10 +504,10 @@ function handleClickedHotspot(
     )
   ) {
     InteractionManager.showTemporaryMessage(
-    "No encuentro un camino.",
-    state,
-    actionLine,
-);
+      "No encuentro un camino.",
+      state,
+      actionLine,
+    );
 
     return;
   }
@@ -547,10 +561,10 @@ function handleGroundClick(
     )
   ) {
     InteractionManager.showTemporaryMessage(
-    "No encuentro un camino.",
-    state,
-    actionLine,
-);
+      "No encuentro un camino.",
+      state,
+      actionLine,
+    );
 
     return;
   }
@@ -577,12 +591,14 @@ function bindGameEvents(
   actionLine,
   verbButtons,
   getMapData,
+  getCurrentMapName,
   getWorldPointFromClick,
   getVerbLabel,
   getActiveCharacter,
   changeMap,
+  changeMapKeepingPosition,
   FOOT_OFFSET_Y,
-) {
+)  {
   // CLICK EN EL CANVAS
   canvas.addEventListener("click", (event) => {
     // evitar clicks de UI
@@ -670,10 +686,10 @@ function bindGameEvents(
 
   bindCharacterButtons(
     state,
-    getMapData,
+    getCurrentMapName,
     actionLine,
     getActiveCharacter,
-    changeMap,
+    changeMapKeepingPosition,
   );
 }
 

@@ -131,7 +131,7 @@ window.ObjectLibrary = [
 
     teleportTo: "map2",
     teleportX: 3,
-    teleportY: 4,
+    teleportY: 10,
     teleportDirection: "right",
 
     interactionTileX: 8,
@@ -172,7 +172,7 @@ window.ObjectLibrary = [
     teleportDirection: "down",
 
     interactionTileX: 3,
-    interactionTileY: 4,
+    interactionTileY: 10,
   },
   // ---------------------------------------------
   // Door 2 - Cuarto de estar / Entrada - map 3
@@ -208,7 +208,7 @@ window.ObjectLibrary = [
     teleportDirection: "right",
 
     interactionTileX: 28,
-    interactionTileY: 4,
+    interactionTileY: 10,
   },
 
   // ---------------------------------------------
@@ -241,7 +241,7 @@ window.ObjectLibrary = [
 
     teleportTo: "map2",
     teleportX: 28,
-    teleportY: 4,
+    teleportY: 10,
     teleportDirection: "left",
 
     interactionTileX: 3,
@@ -277,12 +277,12 @@ window.ObjectLibrary = [
     teleportMode: "inside",
 
     teleportTo: "map4",
-    teleportX: 7,
+    teleportX: 3,
     teleportY: 4,
-    teleportDirection: "down",
+    teleportDirection: "right",
 
     interactionTileX: 7,
-    interactionTileY: 4,
+    interactionTileY: 10,
   },
 
   // ---------------------------------------------
@@ -315,10 +315,10 @@ window.ObjectLibrary = [
 
     teleportTo: "map2",
     teleportX: 7,
-    teleportY: 4,
+    teleportY: 10,
     teleportDirection: "down",
 
-    interactionTileX: 7,
+    interactionTileX: 3,
     interactionTileY: 4,
   },
 
@@ -355,7 +355,7 @@ window.ObjectLibrary = [
     teleportDirection: "down",
 
     interactionTileX: 19,
-    interactionTileY: 4,
+    interactionTileY: 10,
   },
 
   // ---------------------------------------------
@@ -387,7 +387,7 @@ window.ObjectLibrary = [
 
     teleportTo: "map2",
     teleportX: 19,
-    teleportY: 4,
+    teleportY: 10,
     teleportDirection: "down",
 
     interactionTileX: 7,
@@ -464,6 +464,152 @@ window.ObjectLibrary = [
 
     interactionTileX: 8,
     interactionTileY: 3,
+  },
+
+  // ---------------------------------------------
+  // Door 10 - Entrada secreta / Entrada - map 9
+  // Estado Inicial -> Cerrado <especial no se puede cerrar>
+  // ---------------------------------------------
+  {
+    id: "door_10",
+    doorPair: "door_pair_6",
+    type: "door",
+    name: "Suelo raro",
+
+    description: "Parece raro, diria que hay gato encerrado.",
+
+    sprite: "door_10.png",
+
+    defaultSpriteWidth: 30,
+    defaultSpriteHeight: 36,
+
+    defaultHitboxWidth: 30,
+    defaultHitboxHeight: 36,
+
+    pickup: false,
+
+    locked: true,
+    opened: false,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map9",
+    teleportX: 6,
+    teleportY: 4,
+    teleportDirection: "down",
+
+    interactionTileX: 24,
+    interactionTileY: 5,
+  },
+
+  // ---------------------------------------------
+  // Door 11 - Salida secreta / Entrada - map 9
+  // Estado Inicial -> Abierta
+  // ---------------------------------------------
+  {
+    id: "door_11",
+    doorPair: "door_pair_6",
+    type: "door",
+    name: "Subir escalera",
+
+    description: "Una escalera que te cagas.",
+
+    sprite: "door_11.png",
+
+    defaultSpriteWidth: 30,
+    defaultSpriteHeight: 96,
+
+    defaultHitboxWidth: 30,
+    defaultHitboxHeight: 96,
+
+    pickup: false,
+
+    locked: true,
+    opened: false,
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map6",
+    teleportX: 24,
+    teleportY: 5,
+    teleportDirection: "down",
+
+    interactionTileX: 6,
+    interactionTileY: 0,
+  },
+
+  // ---------------------------------------------
+  // Door 12 - sin definir / Entrada - map 7
+  // ---------------------------------------------
+  {
+    id: "door_12",
+    doorPair: "door_pair_7",
+
+    type: "door",
+    name: "Puerta",
+
+    description: "Es una puerta.",
+
+    sprite: "door_12.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: false,
+
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map7",
+    teleportX: 14,
+    teleportY: 4,
+    teleportDirection: "left",
+
+    interactionTileX: 3,
+    interactionTileY: 4,
+  },
+
+  // ---------------------------------------------
+  // Door 13 - Sin definir / Salida - map 2
+  // ---------------------------------------------
+  {
+    id: "door_13",
+    doorPair: "door_pair_7",
+
+    type: "door",
+    name: "Puerta",
+
+    description: "Es una puerta.",
+
+    sprite: "door_13.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: false,
+
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map2",
+    teleportX: 3,
+    teleportY: 4,
+    teleportDirection: "right",
+
+    interactionTileX: 14,
+    interactionTileY: 4,
   },
 
   // ---------------------------------------------

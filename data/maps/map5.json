@@ -232,7 +232,7 @@
       "openSprite": null,
       "teleportTo": "map2",
       "teleportX": 19,
-      "teleportY": 4,
+      "teleportY": 10,
       "teleportDirection": "down",
       "interactionMode": "inside",
       "teleportMode": "inside",

@@ -50,4 +50,27 @@ window.MapLibrary = [
     image: "map6.png",
     json: "map6.json",
   },
+
+  {
+    id: "map7",
+    name: "Mapa 7 - no claro 1",
+    image: "map7.png",
+    json: "map7.json",
+  },
+
+  {
+    id: "map8",
+    name: "Mapa 8 - no claro 2",
+    image: "map8.png",
+    json: "map8.json",
+  },
+
+  {
+    id: "map9",
+    name: "Mapa 9 - Sotano",
+    image: "map9.png",
+    json: "map9.json",
+  },
+
+
 ];

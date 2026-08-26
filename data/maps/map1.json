@@ -272,7 +272,7 @@
       "typeId": "door_0",
       "teleportTo": "map2",
       "teleportX": 3,
-      "teleportY": 4,
+      "teleportY": 10,
       "teleportDirection": "right",
       "interactionMode": "front",
       "teleportMode": "front",

@@ -206,10 +206,12 @@ window.GameModule = (() => {
       actionLine,
       verbButtons,
       () => mapData,
+      () => currentMapName,
       getWorldPointFromClick,
       getVerbLabel,
       getActiveCharacter,
       changeMap,
+      changeMapKeepingPosition,
       FOOT_OFFSET_Y,
     );
     await loadGameAssets();
@@ -494,6 +496,71 @@ window.GameModule = (() => {
   }
 
   // -------------------------------------------------------
+  // CAMBIA DE MAPA CONSERVANDO LA POSICIÓN EXACTA
+  // Se usa al cambiar de personaje.
+  // -------------------------------------------------------
+  async function changeMapKeepingPosition(
+    mapName,
+    worldX,
+    worldY,
+    direction = "down",
+  ) {
+    await loadMapData(mapName);
+
+    DoorManager.applyPersistentObjectStates(currentMapName, mapData?.objects);
+
+    await loadMapImage();
+
+    objectSprites = {};
+
+    await loadObjectSprites();
+
+    const player = getActiveCharacter();
+
+    player.currentMap = mapName;
+
+    // Mantener coordenadas EXACTAS
+    player.x = worldX;
+    player.y = worldY;
+
+    player.direction = direction;
+    player.moving = false;
+
+    // Cancelar acciones anteriores
+    state.target.active = false;
+    state.pendingInteraction = null;
+    state.pendingTeleport = null;
+    state.pendingHotspot = null;
+
+    state.path = [];
+    state.pathIndex = 0;
+
+    CameraManager.centerCameraOnPlayer(
+      player,
+      state,
+      canvas,
+      mapData,
+      MAP_SCALE,
+    );
+
+    RenderManager.render(
+      ctx,
+      canvas,
+      mapImageLoaded,
+      mapImage,
+      state,
+      mapData,
+      objectSprites,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+      player,
+    );
+  }
+
+  // -------------------------------------------------------
   // CARGA LOS SPRITES DE LOS OBJETOS
   // -------------------------------------------------------
   async function loadObjectSprites() {
@@ -660,76 +727,67 @@ window.GameModule = (() => {
     };
   }
 
-// -------------------------------------------------------
-// UPDATE GENERAL
-// -------------------------------------------------------
-function update(delta) {
-  if (!mapData) return;
+  // -------------------------------------------------------
+  // UPDATE GENERAL
+  // -------------------------------------------------------
+  function update(delta) {
+    if (!mapData) return;
 
-  const controllerContext = getPlayerControllerContext();
+    const controllerContext = getPlayerControllerContext();
 
-  if (state.path.length > 0) {
-    PlayerController.updatePlayerByPath(
-      delta,
-      controllerContext,
-    );
-  } else {
-    // -----------------------------------------
-    // Ya estamos colocados para interactuar
-    // -----------------------------------------
-    if (state.pendingInteraction) {
-      InteractionManager.handleObjectInteraction(
-        state.pendingInteraction,
-        state,
-        actionLine,
-        currentMapName,
-        mapData,
-        ctx,
-        canvas,
-        mapImageLoaded,
-        mapImage,
-        objectSprites,
-        playerSprites,
-        MAP_SCALE,
-        PLAYER_SCALE,
-        FRAME_WIDTH,
-        FRAME_HEIGHT,
-        getVerbLabel,
-        changeMap,
-      );
+    if (state.path.length > 0) {
+      PlayerController.updatePlayerByPath(delta, controllerContext);
+    } else {
+      // -----------------------------------------
+      // Ya estamos colocados para interactuar
+      // -----------------------------------------
+      if (state.pendingInteraction) {
+        InteractionManager.handleObjectInteraction(
+          state.pendingInteraction,
+          state,
+          actionLine,
+          currentMapName,
+          mapData,
+          ctx,
+          canvas,
+          mapImageLoaded,
+          mapImage,
+          objectSprites,
+          playerSprites,
+          MAP_SCALE,
+          PLAYER_SCALE,
+          FRAME_WIDTH,
+          FRAME_HEIGHT,
+          getVerbLabel,
+          changeMap,
+        );
 
-      state.pendingInteraction = null;
+        state.pendingInteraction = null;
+      }
+
+      if (state.pendingHotspot) {
+        InteractionManager.handleHotspotInteraction(
+          state.pendingHotspot,
+          state,
+          actionLine,
+        );
+
+        state.pendingHotspot = null;
+      }
+
+      PlayerController.updatePlayerByMouseTarget(delta, controllerContext);
     }
 
-    if (state.pendingHotspot) {
-      InteractionManager.handleHotspotInteraction(
-        state.pendingHotspot,
-        state,
-        actionLine,
-      );
+    MovementManager.updatePlayerAnimation(delta, getActiveCharacter());
 
-      state.pendingHotspot = null;
-    }
-
-    PlayerController.updatePlayerByMouseTarget(
-      delta,
-      controllerContext,
+    CameraManager.updateCamera(
+      getActiveCharacter(),
+      state,
+      canvas,
+      mapData,
+      MAP_SCALE,
     );
   }
-
-  MovementManager.updatePlayerAnimation(
-    delta,
-    getActiveCharacter(),
-  );
-
-  CameraManager.updateCamera(
-    getActiveCharacter(),
-    state,
-    canvas,
-    mapData,
-    MAP_SCALE,
-  );
-}
 
   // -------------------------------------------------------
   // COLOCA AL PERSONAJE EN EL SPAWN DEL JSON
@@ -759,10 +817,10 @@ function update(delta) {
     // POSICIONAR COMPAÑEROS CERCA DEL JUGADOR
     // -------------------------------------------------------
     state.companions[0].x = state.player.x - 30;
-    state.companions[0].y = state.player.y + 10;
+    state.companions[0].y = state.player.y;
 
     state.companions[1].x = state.player.x + 30;
-    state.companions[1].y = state.player.y + 10;
+    state.companions[1].y = state.player.y;
   }
 
   // -------------------------------------------------------
