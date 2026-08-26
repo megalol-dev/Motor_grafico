@@ -814,18 +814,7 @@ window.GameModule = (() => {
     state.player.y = (spawnRow + 1) * tileH;
 
     // -------------------------------------------------------
-    // POSICIONAR COMPAÑEROS CERCA DEL JUGADOR
-    // -------------------------------------------------------
-    state.companions[0].x = state.player.x - 30;
-    state.companions[0].y = state.player.y;
-
-    state.companions[1].x = state.player.x + 30;
-    state.companions[1].y = state.player.y;
-  }
-
-  // -------------------------------------------------------
-  // DEVUELVE EL PERSONAJE ACTIVO
-  // -------------------------------------------------------
+    // POSICIONAR COMPAÑEROS CERCA DEL JUGADOR-----------------
   function getActiveCharacter() {
     if (state.activeCharacter === "slot1") {
       return state.player;
