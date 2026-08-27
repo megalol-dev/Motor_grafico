@@ -271,10 +271,10 @@ function drawMap(ctx, mapImageLoaded, mapImage, state, canvas, MAP_SCALE) {
   if (mapImageLoaded && mapImage) {
     ctx.drawImage(
       mapImage,
-      Math.floor(state.camera.x),
-      Math.floor(state.camera.y),
-      Math.floor(canvas.width / MAP_SCALE),
-      Math.floor(canvas.height / MAP_SCALE),
+      state.camera.x,
+      state.camera.y,
+      canvas.width / MAP_SCALE,
+      canvas.height / MAP_SCALE,
       0,
       0,
       canvas.width,

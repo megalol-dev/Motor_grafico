@@ -150,7 +150,7 @@
       "doorPair": "door_pair_7",
       "typeId": "door_13",
       "teleportTo": "map2",
-      "teleportX": 3,
+      "teleportX": 7,
       "teleportY": 4,
       "teleportDirection": "right",
       "interactionMode": "inside",

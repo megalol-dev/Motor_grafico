@@ -571,7 +571,7 @@ window.ObjectLibrary = [
     teleportY: 4,
     teleportDirection: "left",
 
-    interactionTileX: 3,
+    interactionTileX: 7,
     interactionTileY: 4,
   },
 
@@ -604,11 +604,85 @@ window.ObjectLibrary = [
     teleportMode: "inside",
 
     teleportTo: "map2",
-    teleportX: 3,
+    teleportX: 7,
     teleportY: 4,
     teleportDirection: "right",
 
     interactionTileX: 14,
+    interactionTileY: 4,
+  },
+
+  // ---------------------------------------------
+  // Door 14 - Cuarto de estar / Entrada - map 3
+  // ---------------------------------------------
+  {
+    id: "door_14",
+    doorPair: "door_pair_8",
+
+    type: "door",
+    name: "Puerta",
+
+    description: "Es una puerta.",
+
+    sprite: "door_14.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: false,
+
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map8",
+    teleportX: 3,
+    teleportY: 4,
+    teleportDirection: "right",
+
+    interactionTileX: 24,
+    interactionTileY: 4,
+  },
+
+  // ---------------------------------------------
+  // Door 15 - Cuarto de estar / Salida - map 2
+  // ---------------------------------------------
+  {
+    id: "door_15",
+    doorPair: "door_pair_8",
+
+    type: "door",
+    name: "Puerta",
+
+    description: "Es una puerta.",
+
+    sprite: "door_15.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 71,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 71,
+
+    pickup: false,
+
+    locked: true,
+    opened: false,
+
+    interactionMode: "inside",
+    teleportMode: "inside",
+
+    teleportTo: "map2",
+    teleportX: 24,
+    teleportY: 4,
+    teleportDirection: "left",
+
+    interactionTileX: 3,
     interactionTileY: 4,
   },
 
