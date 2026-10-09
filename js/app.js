@@ -38,12 +38,12 @@ const state = {
   // ---------------------------------------------------
   characters: [
 
-    { id: 1, name: 'PJ1' },
-    { id: 2, name: 'PJ2' },
-    { id: 3, name: 'PJ3' },
-    { id: 4, name: 'PJ4' },
-    { id: 5, name: 'PJ5' },
-    { id: 6, name: 'PJ6' }
+    { id: 1, name: 'Ryan' },
+    { id: 2, name: 'April' },
+    { id: 3, name: 'Milton' },
+    { id: 4, name: 'Hank' },
+    { id: 5, name: 'Spike' },
+    { id: 6, name: 'Robin' }
   ]
 };
 
@@ -208,38 +208,50 @@ function buildPartyGrid() {
     }
 
     // ---------------------------------------------------
-    // NOMBRES Y DESCRIPCIONES TEMPORALES
+    // NOMBRES Y DESCRIPCIONES DE LOS PERSONAJES
     // ---------------------------------------------------
     const descriptions = {
 
       1: {
-        name: 'Alex',
-        desc: 'Un chico valiente con gran curiosidad.'
+        name: 'Ryan',
+        title: 'El Líder',
+        desc: 'Carismático, optimista y algo arrogante. No es experto en nada, pero sabe reconocer las habilidades de los demás y orientar al grupo. Su especialidad es dar pistas y detectar quién podría resolver un problema.',
+        selectionDesc: 'Líder carismático que sabe aprovechar las habilidades del grupo.'
       },
 
       2: {
-        name: 'Luna',
-        desc: 'Una chica inteligente amante de la ciencia.'
+        name: 'April',
+        title: 'La Artista',
+        desc: 'Creativa, observadora, perfeccionista y bastante tiquismiquis. Apasionada del arte y la estética. Experta en colores, materiales, composición y detalles que otros personajes pasan por alto.',
+        selectionDesc: 'Artista observadora, experta en colores, materiales y detalles.'
       },
 
       3: {
-        name: 'Rex',
-        desc: 'Un joven rebelde experto en tecnología.'
+        name: 'Milton',
+        title: 'El Empollón',
+        desc: 'Inteligente, metódico, tímido y pedante. Experto en informática, electrónica y ciencia. Le encanta dar explicaciones técnicas, incluso cuando nadie se las pide.',
+        selectionDesc: 'Genio de la informática, la electrónica y la ciencia.'
       },
 
       4: {
-        name: 'Victor',
-        desc: 'Un deportista fuerte y competitivo.'
+        name: 'Hank',
+        title: 'El Forzudo',
+        desc: 'Musculoso, competitivo, directo y leal. Prefiere las soluciones físicas a las complicaciones intelectuales. Parece un bruto, pero a veces sorprende con su sensibilidad y sentido común.',
+        selectionDesc: 'Fuerte y leal, prefiere resolver los problemas con músculo.'
       },
 
       5: {
-        name: 'Neo',
-        desc: 'Un chico callado con gran intuición.'
+        name: 'Spike',
+        title: 'El Punky',
+        desc: 'Rebelde, sarcástico, impulsivo y algo borrachín. Conoce los trucos de la calle y detesta las normas. Especialista en soluciones poco convencionales, cerraduras y sistemas de seguridad.',
+        selectionDesc: 'Rebelde callejero, experto en cerraduras y trucos poco convencionales.'
       },
 
       6: {
-        name: 'Sara',
-        desc: 'Una artista creativa con gran imaginación.'
+        name: 'Robin',
+        title: 'La Vegana',
+        desc: 'Hippie, pacifista, idealista y amante de los animales y la naturaleza. Empática, espiritual y algo excéntrica. Especialista en plantas, animales, ecología y remedios naturales.',
+        selectionDesc: 'Pacifista y amante de la naturaleza, experta en plantas y animales.'
       }
     };
 
@@ -254,12 +266,14 @@ function buildPartyGrid() {
     // ---------------------------------------------------
     card.innerHTML = `
 
-      <div class="party-card-left">
+      <div class="party-card-main">
 
-        <img
-          src="./img/personajes/SELE${character.id}.png"
-          alt="${info.name}"
-        >
+        <div class="party-sprite-box">
+          <img
+            src="./img/personajes/SELE${character.id}.png"
+            alt="${info.name}"
+          >
+        </div>
 
         <div class="party-info-box">
 
@@ -267,8 +281,12 @@ function buildPartyGrid() {
             ${info.name}
           </div>
 
+          <div class="party-character-role">
+            ${info.title}
+          </div>
+
           <div class="party-character-description">
-            ${info.desc}
+            ${info.selectionDesc}
           </div>
 
         </div>
@@ -286,9 +304,9 @@ function buildPartyGrid() {
     `;
 
     // ---------------------------------------------------
-    // CLICK EN TARJETA
+    // CLICK EN BOTÓN DE SELECCIÓN
     // ---------------------------------------------------
-    card.addEventListener(
+    card.querySelector('.party-select-btn').addEventListener(
       'click',
       () => toggleCharacter(character.id)
     );
@@ -366,7 +384,11 @@ function updatePartyUi() {
 
     selectionText.textContent =
       state.selectedParty
-        .map((id) => `PJ${id}`)
+        .map((id) =>
+          state.characters.find(
+            (character) => character.id === id
+          ).name
+        )
         .join(', ');
   }
 

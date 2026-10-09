@@ -309,12 +309,12 @@ window.GameModule = (() => {
   // -------------------------------------------------------
   function updatePartyButtons() {
     const descriptions = {
-      1: { name: "Alex" },
-      2: { name: "Luna" },
-      3: { name: "Rex" },
-      4: { name: "Victor" },
-      5: { name: "Neo" },
-      6: { name: "Sara" },
+      1: { name: "Ryan" },
+      2: { name: "April" },
+      3: { name: "Milton" },
+      4: { name: "Hank" },
+      5: { name: "Spike" },
+      6: { name: "Robin" },
     };
 
     const savedParty = JSON.parse(localStorage.getItem("selectedParty"));

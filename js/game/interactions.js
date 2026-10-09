@@ -313,6 +313,72 @@ EventsManager.selectDefaultVerb(state, actionLine, true);;
   }
 
   // ---------------------------------------------------
+  // CLOSE
+  // ---------------------------------------------------
+  if (verb === "close") {
+    if (obj.type !== "door") {
+      InteractionManager.showTemporaryMessage(
+        `No puedo cerrar ${obj.name}.`,
+        state,
+        actionLine,
+      );
+      EventsManager.selectDefaultVerb(state, actionLine, true);
+      return;
+    }
+
+    if (!obj.opened) {
+      InteractionManager.showTemporaryMessage(
+        "La puerta ya está cerrada.",
+        state,
+        actionLine,
+      );
+      EventsManager.selectDefaultVerb(state, actionLine, true);
+      return;
+    }
+
+    const requiresItem = window.ObjectLibrary?.some(
+      (item) =>
+        item.type === "door" &&
+        item.doorPair === obj.doorPair &&
+        Boolean(item.requiredItem),
+    );
+
+    DoorManager.setDoorState(
+      obj.doorPair,
+      false,
+      Boolean(requiresItem),
+      mapData?.objects,
+    );
+    DoorManager.persistObjectState(obj, currentMapName);
+
+    RenderManager.render(
+      ctx,
+      canvas,
+      mapImageLoaded,
+      mapImage,
+      state,
+      mapData,
+      objectSprites,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+      state.companions.find((c) => c.id === state.activeCharacter) ??
+        state.player,
+    );
+
+    InteractionManager.showTemporaryMessage(
+      "Puerta se ha cerrado.",
+      state,
+      actionLine,
+    );
+    EventsManager.selectDefaultVerb(state, actionLine, true);
+
+    return;
+  }
+
+  // ---------------------------------------------------
   // RESTO DE VERBOS
   // ---------------------------------------------------
   if (actionLine) {

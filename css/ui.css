@@ -188,17 +188,6 @@ body {
 }
 
 /* ===================================================== */
-/* HOVER */
-/* ===================================================== */
-
-.party-card:hover {
-
-    border-color: #ffd447;
-
-    transform: translateY(-2px);
-}
-
-/* ===================================================== */
 /* PANTALLA SELECCIÓN DE PERSONAJES */
 /* ===================================================== */
 
@@ -206,6 +195,8 @@ body {
     width: 100vw;
     height: 100vh;
     min-height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
 
     border: none;
     box-shadow: none;
@@ -213,20 +204,20 @@ body {
     background: #000;
     color: #f2f2f2;
 
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    row-gap: 10px;
     align-items: center;
 
-    padding: 42px 48px 28px;
+    padding: 18px 32px 14px;
     text-align: center;
 }
 
 .party-box h2 {
-    margin: 0 0 12px;
+    margin: 0 0 8px;
     color: #ffd447;
     text-shadow: 4px 4px 0 #7e2d00;
-    font-size: clamp(28px, 3vw, 52px);
+    font-size: clamp(28px, 2.5vw, 42px);
 }
 
 .party-info {
@@ -239,14 +230,17 @@ body {
 /* ===================================================== */
 
 .party-grid {
-    width: min(1350px, 94vw);
+    width: min(1260px, 94vw);
+    height: 100%;
+    min-height: 0;
 
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
 
-    gap: 22px;
+    gap: 12px 16px;
 
-    margin: 10px auto 28px;
+    margin: 0 auto;
 }
 
 /* ===================================================== */
@@ -258,24 +252,18 @@ body {
 
     border: 3px solid #666;
 
-    min-height: 210px;
+    min-height: 0;
 
-    padding: 16px;
+    padding: 18px 18px 64px;
 
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
 
-    gap: 16px;
-
-    cursor: pointer;
+    gap: 12px;
 
     transition: 0.15s;
-}
-
-.party-card:hover {
-    border-color: #ffd447;
-    transform: translateY(-2px);
 }
 
 .party-card.selected {
@@ -285,15 +273,33 @@ body {
 }
 
 /* ===================================================== */
-/* ZONA IZQUIERDA DE LA TARJETA */
+/* CONTENIDO HORIZONTAL DE LA TARJETA */
 /* ===================================================== */
 
-.party-card-left {
+.party-card-main {
+    width: 100%;
+    flex: 1;
+
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 20px;
+}
+
+.party-sprite-box {
+    min-width: 90px;
+
     display: flex;
     align-items: center;
-    gap: 18px;
+    justify-content: center;
+}
 
-    flex: 1;
+.party-info-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    text-align: left;
 }
 
 /* ===================================================== */
@@ -301,8 +307,10 @@ body {
 /* ===================================================== */
 
 .party-card img {
-    width: 72px;
-    height: 180px;
+    box-sizing: content-box;
+    width: 84px;
+    height: 210px;
+    max-width: 100%;
 
     object-fit: contain;
 
@@ -318,33 +326,31 @@ body {
 /* TEXTO PERSONAJE */
 /* ===================================================== */
 
-.party-info-box {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-
-    text-align: left;
-
-    gap: 10px;
-}
-
 .party-character-name {
     color: #ffd447;
 
-    font-size: 26px;
+    font-size: 24px;
     font-weight: bold;
 
     text-shadow: 2px 2px 0 #5a2400;
 }
 
+.party-character-role {
+    color: #ff62ff;
+
+    font-size: 15px;
+    font-weight: bold;
+}
+
 .party-character-description {
     color: #dcdcdc;
 
-    font-size: 15px;
+    font-size: 14px;
 
-    line-height: 1.35;
+    line-height: 1.25;
 
-    max-width: 230px;
+    width: 100%;
+    text-align: left;
 }
 
 /* ===================================================== */
@@ -358,7 +364,7 @@ body {
 
     color: #f2f2f2;
 
-    padding: 10px 15px;
+    padding: 7px 14px;
 
     font-family: inherit;
     font-size: 14px;
@@ -367,7 +373,11 @@ body {
 
     text-transform: uppercase;
 
-    min-width: 95px;
+    min-width: 100px;
+
+    position: absolute;
+    right: 18px;
+    bottom: 14px;
 
     transition: 0.15s;
 }
@@ -389,32 +399,60 @@ body {
 .party-summary {
     color: #ff62ff;
 
-    margin: 0 0 18px;
+    margin: 0;
 
-    font-size: 22px;
+    font-size: 18px;
 }
 
 #party-start-btn {
-    margin-top: auto;
-    margin-bottom: 18px;
+    justify-self: center;
+    margin: 0 0 4px;
+    padding: 10px 18px;
 }
 
 /* ===================================================== */
 /* RESPONSIVE */
 /* ===================================================== */
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
+    #party-screen {
+        align-items: flex-start;
+        overflow-y: auto;
+    }
+
+    .party-box {
+        height: auto;
+        min-height: 100%;
+        grid-template-rows: auto;
+        padding: 20px;
+    }
+
     .party-grid {
+        height: auto;
         grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: none;
     }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 600px) {
     .party-grid {
         grid-template-columns: 1fr;
     }
+}
 
-    .party-card {
-        min-height: 190px;
+@media (max-height: 680px) {
+    #party-screen {
+        align-items: flex-start;
+        overflow-y: auto;
+    }
+
+    .party-box {
+        height: auto;
+        min-height: 100%;
+        grid-template-rows: auto;
+    }
+
+    .party-grid {
+        height: auto;
     }
 }

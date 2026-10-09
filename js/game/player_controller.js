@@ -84,10 +84,10 @@ function updatePlayerByPath(delta, context) {
 
       // ---------------------------------------------------------
       // Ajustar la posición final al centro exacto de la casilla
-      // solo al abrir una puerta.
+      // solo al abrir o cerrar una puerta.
       // ---------------------------------------------------------
       if (
-        state.currentVerb.toLowerCase() === "open" &&
+        ["open", "close"].includes(state.currentVerb.toLowerCase()) &&
         state.pendingInteraction?.type === "door" &&
         Number.isInteger(state.pendingInteraction.interactionTileX) &&
         Number.isInteger(state.pendingInteraction.interactionTileY)
