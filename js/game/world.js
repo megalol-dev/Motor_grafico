@@ -23,6 +23,17 @@ function getTileKey(col, row) {
   return `${col},${row}`;
 }
 
+function isObjectSolid(obj) {
+  if (!obj || obj.visible === false || obj.collected) return false;
+  if (obj.type === "door") return !obj.opened;
+
+  const libraryItem = window.ObjectLibrary?.find(
+    (item) => item.id === obj.typeId,
+  );
+
+  return obj.solid === true || libraryItem?.solid === true;
+}
+
 // -------------------------------------------------------
 // COMPRUEBA SI UNA CASILLA ESTÁ BLOQUEADA POR UN OBJETO <refactor>
 // -------------------------------------------------------
@@ -39,14 +50,7 @@ function isTileBlockedByObject(col, row, mapData) {
   const tileFootY = (row + 1) * tileH;
 
   for (const obj of mapData.objects) {
-    if (obj.type !== "door") {
-      continue;
-    }
-
-    // Una puerta abierta deja de bloquear el camino
-    if (obj.opened) {
-      continue;
-    }
+    if (!isObjectSolid(obj)) continue;
 
     const inside =
       tileCenterX >= obj.x &&
@@ -60,6 +64,17 @@ function isTileBlockedByObject(col, row, mapData) {
   }
 
   return false;
+}
+
+function isTileBlockedByNpc(col, row, mapData) {
+  const tileW = mapData?.tileWidth;
+  const tileH = mapData?.tileHeight;
+  if (!tileW || !tileH) return false;
+
+  const tileCenterX = col * tileW + tileW / 2;
+  const tileFootY = (row + 1) * tileH;
+
+  return NpcManager.isPointBlockedByNpc(tileCenterX, tileFootY, mapData);
 }
 
 // -------------------------------------------------------
@@ -81,6 +96,10 @@ function isWalkableTile(col, row, mapData) {
 
   // Una puerta cerrada bloquea dinámicamente la casilla
   if (WorldManager.isTileBlockedByObject(col, row, mapData)) {
+    return false;
+  }
+
+  if (WorldManager.isTileBlockedByNpc(col, row, mapData)) {
     return false;
   }
 
@@ -139,7 +158,9 @@ function getCharacterTile(character, mapData, FOOT_OFFSET_Y) {
 }
 
 window.WorldManager = {
+  isObjectSolid,
   isTileBlockedByObject,
+  isTileBlockedByNpc,
   isWalkableTile,
   findNearestWalkableTile,
   getCharacterTile,

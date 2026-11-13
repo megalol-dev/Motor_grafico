@@ -35,6 +35,11 @@ window.VerbLibrary = [
     label: "Cerrar",
   },
 
+  {
+    id: "talk",
+    label: "Hablar",
+  },
+
   // ---------------------------------------------
   // FILA 2
   // ---------------------------------------------
@@ -71,3 +76,49 @@ window.VerbLibrary = [
     label: "Combinar",
   },
 ];
+
+// =======================================================
+// PRESENTACIÓN DE VERBOS EN LA INTERFAZ
+// =======================================================
+// Los identificadores internos pueden seguir en inglés. Toda salida visible
+// debe pasar por estas funciones para mostrarla en español de forma uniforme.
+function getVisibleVerbLabel(id) {
+  const normalizedId = String(id ?? "").toLowerCase();
+
+  if (normalizedId === "walk to") {
+    return "Ir a";
+  }
+
+  const verb = window.VerbLibrary.find(
+    (item) => item.id.toLowerCase() === normalizedId,
+  );
+
+  return verb?.label ?? String(id ?? "");
+}
+
+function formatVerbPrompt(id) {
+  return `${getVisibleVerbLabel(id)}...`;
+}
+
+function formatVerbTarget(id, targetName) {
+  const label = getVisibleVerbLabel(id);
+
+  if (String(id ?? "").toLowerCase() === "talk") {
+    return `${label} con ${targetName}`;
+  }
+
+  return `${label} ${targetName}`;
+}
+
+function formatUseWith(itemName, targetName = "") {
+  return targetName
+    ? `Usar ${itemName} con ${targetName}`
+    : `Usar ${itemName} con...`;
+}
+
+window.VerbManager = {
+  getLabel: getVisibleVerbLabel,
+  formatPrompt: formatVerbPrompt,
+  formatTarget: formatVerbTarget,
+  formatUseWith,
+};

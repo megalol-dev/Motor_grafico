@@ -14,6 +14,7 @@
     <!-- ===================================================== -->
     <link rel="stylesheet" href="css/ui.css" />
     <link rel="stylesheet" href="css/game.css" />
+    <link rel="stylesheet" href="css/chest.css" />
     <link rel="stylesheet" href="css/editor.css" />
   </head>
 
@@ -31,9 +32,9 @@
 
           <p class="subtitle">Prototipo base estilo aventura gráfica retro</p>
 
-          <p class="blink-text">Pulsa START</p>
+          <p class="blink-text">Pulsa COMENZAR</p>
 
-          <button id="title-start-btn" class="main-btn">Start</button>
+          <button id="title-start-btn" class="main-btn">Comenzar</button>
         </div>
       </section>
 
@@ -52,7 +53,7 @@
           </div>
 
           <button id="party-start-btn" class="main-btn" disabled>
-            Start Game
+            Comenzar partida
           </button>
         </div>
       </section>
@@ -68,6 +69,23 @@
             <!-- ================================================= -->
             <section class="play-area">
               <canvas id="game-canvas" width="1248" height="540"></canvas>
+
+              <section
+                id="chest-overlay"
+                class="chest-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="chest-title"
+                hidden
+              >
+                <div class="chest-window">
+                  <div id="chest-title" class="chest-title">
+                    Contenido del Cofre Mágico
+                  </div>
+
+                  <div id="chest-storage-grid" class="chest-storage-grid"></div>
+                </div>
+              </section>
             </section>
 
             <!-- ================================================= -->
@@ -77,7 +95,7 @@
               <!-- =============================================== -->
               <!-- TEXTO DE ACCIONES -->
               <!-- =============================================== -->
-              <div id="action-line" class="action-line">Walk to ...</div>
+              <div id="action-line" class="action-line">Ir a...</div>
 
               <!-- =============================================== -->
               <!-- VERBOS + CAMBIO DE PERSONAJES -->
@@ -131,6 +149,7 @@
             </section>
           </section>
         </main>
+
       </section>
 
       <!-- ===================================================== -->
@@ -205,6 +224,18 @@
             <div class="editor-workspace">
               <div class="editor-special-tools">
                 <button id="toggle-grid-btn">Quitar / Ver rejilla</button>
+                <button id="add-foreground-graphic-btn">
+                  Cr Trans
+                </button>
+                <button id="edit-foreground-graphic-btn">
+                  Ed Trans
+                </button>
+                <button id="delete-foreground-graphic-mode-btn">
+                  El Trans
+                </button>
+                <button id="add-npc-btn">Cr NPC</button>
+                <button id="edit-npc-btn">Ed NPC</button>
+                <button id="delete-npc-btn">El NPC</button>
               </div>
 
               <div class="editor-center">
@@ -266,6 +297,8 @@
 
     <!--Objetos del juego - catálogos-->
     <script src="js/catalogs/objects.js"></script>
+    <script src="js/catalogs/graficos_traspasables.js"></script>
+    <script src="js/catalogs/npcs.js"></script>
     <script src="js/catalogs/hotspots.js"></script>
     <script src="js/catalogs/maps.js"></script>
     <script src="js/catalogs/verbs.js"></script>
@@ -275,8 +308,13 @@
 
     <!-- Módulos de cada función del juego -->
     <script src="./js/game/game_state.js"></script>
+    <script src="./js/game/variables.js"></script>
+    <script src="./js/game/dialogues.js"></script>
+    <script src="./js/game/npcs.js"></script>
     <script src="./js/game/doors.js"></script>
+    <script src="./js/game/object_states.js"></script>
     <script src="./js/game/inventory.js"></script>
+    <script src="./js/game/chest.js"></script>
     <script src="./js/game/camera.js"></script>
     <script src="./js/game/world.js"></script>
     <script src="./js/game/movement.js"></script>

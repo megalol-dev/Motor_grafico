@@ -60,7 +60,37 @@ function getDoorState(doorPair) {
     };
   }
 
+  normalizeDoorState(doorPair, GameState.doors[doorPair]);
+
   return GameState.doors[doorPair];
+}
+
+// -------------------------------------------------------
+// REGLAS DE APERTURA PERMANENTE DEFINIDAS EN CATÁLOGO
+// -------------------------------------------------------
+function requiresForcedOpen(doorPair) {
+  return Boolean(
+    window.ObjectLibrary?.some(
+      (item) => item.doorPair === doorPair && item.requiresForcedOpen,
+    ),
+  );
+}
+
+function normalizeDoorState(doorPair, doorState) {
+  if (doorState.forcedOpen) {
+    doorState.opened = true;
+    doorState.locked = false;
+    return;
+  }
+
+  if (requiresForcedOpen(doorPair)) {
+    doorState.opened = false;
+    doorState.locked = true;
+  }
+}
+
+function isDoorForcedOpen(doorPair) {
+  return Boolean(getDoorState(doorPair)?.forcedOpen);
 }
 
 // -------------------------------------------------------
@@ -100,10 +130,39 @@ function setDoorState(doorPair, opened, locked, objects) {
 
   const doorState = getDoorState(doorPair);
 
-  doorState.opened = opened;
-  doorState.locked = locked;
+  if (doorState.forcedOpen) {
+    doorState.opened = true;
+    doorState.locked = false;
+  } else if (requiresForcedOpen(doorPair)) {
+    doorState.opened = false;
+    doorState.locked = true;
+  } else {
+    doorState.opened = opened;
+    doorState.locked = locked;
+  }
 
   syncAllDoors(objects);
+
+  return doorState.opened === opened && doorState.locked === locked;
+}
+
+// -------------------------------------------------------
+// FUERZA UNA PAREJA Y LA DEJA ABIERTA PERMANENTEMENTE
+// -------------------------------------------------------
+function forceDoorOpen(doorPair, objects) {
+  if (!doorPair || !requiresForcedOpen(doorPair)) {
+    return false;
+  }
+
+  const doorState = getDoorState(doorPair);
+
+  doorState.forcedOpen = true;
+  doorState.opened = true;
+  doorState.locked = false;
+
+  syncAllDoors(objects);
+
+  return true;
 }
 
 // -------------------------------------------------------
@@ -155,9 +214,12 @@ window.DoorManager = {
   getMapState,
   getObjectState,
   getDoorState,
+  requiresForcedOpen,
+  isDoorForcedOpen,
   syncDoorState,
   syncAllDoors,
   setDoorState,
+  forceDoorOpen,
   cloneSerializable,
   persistObjectState,
   applyPersistentObjectStates,

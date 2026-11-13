@@ -187,12 +187,12 @@
       1,
       1,
       1,
-      0,
       1,
       1,
       1,
       1,
-      0,
+      1,
+      1,
       1,
       1,
       1,
@@ -646,6 +646,20 @@
       "y": 222,
       "width": 34,
       "height": 36
+    }
+  ],
+  "foregroundGraphics": [
+    {
+      "id": "barrandilla_2_1",
+      "typeId": "barrandilla_2",
+      "x": 384,
+      "y": 146
+    },
+    {
+      "id": "barrandilla_1_1",
+      "typeId": "barrandilla_1",
+      "x": 94,
+      "y": 145
     }
   ]
 }

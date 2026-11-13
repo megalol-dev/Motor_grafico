@@ -31,6 +31,8 @@ function updatePlayerByPath(delta, context) {
     mapImage,
     objectSprites,
     playerSprites,
+    foregroundGraphicSprites,
+    npcSprites,
     MAP_SCALE,
     PLAYER_SCALE,
     FRAME_WIDTH,
@@ -117,6 +119,8 @@ function updatePlayerByPath(delta, context) {
           mapImage,
           objectSprites,
           playerSprites,
+          foregroundGraphicSprites,
+          npcSprites,
           MAP_SCALE,
           PLAYER_SCALE,
           FRAME_WIDTH,
@@ -133,9 +137,24 @@ function updatePlayerByPath(delta, context) {
           state.pendingHotspot,
           state,
           actionLine,
+          currentMapName,
+          mapData,
         );
 
         state.pendingHotspot = null;
+      }
+
+      if (state.pendingNpc) {
+        InteractionManager.handleNpcInteraction(
+          state.pendingNpc,
+          state,
+          actionLine,
+          getVerbLabel,
+          currentMapName,
+          mapData,
+        );
+        state.pendingNpc = null;
+        state.pendingNpcDistance = null;
       }
 
       if (state.pendingTeleport) {
@@ -188,6 +207,8 @@ function updatePlayerByMouseTarget(delta, context) {
     mapImage,
     objectSprites,
     playerSprites,
+    foregroundGraphicSprites,
+    npcSprites,
     MAP_SCALE,
     PLAYER_SCALE,
     FRAME_WIDTH,
@@ -232,6 +253,8 @@ function updatePlayerByMouseTarget(delta, context) {
         mapImage,
         objectSprites,
         playerSprites,
+        foregroundGraphicSprites,
+        npcSprites,
         MAP_SCALE,
         PLAYER_SCALE,
         FRAME_WIDTH,
@@ -251,9 +274,24 @@ function updatePlayerByMouseTarget(delta, context) {
         state.pendingHotspot,
         state,
         actionLine,
+        currentMapName,
+        mapData,
       );
 
       state.pendingHotspot = null;
+    }
+
+    if (state.pendingNpc) {
+      InteractionManager.handleNpcInteraction(
+        state.pendingNpc,
+        state,
+        actionLine,
+        getVerbLabel,
+        currentMapName,
+        mapData,
+      );
+      state.pendingNpc = null;
+      state.pendingNpcDistance = null;
     }
 
     return;

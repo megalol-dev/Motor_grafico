@@ -293,9 +293,23 @@ function drawMap(ctx, mapImageLoaded, mapImage, state, canvas, MAP_SCALE) {
 function drawObjects(ctx, mapData, objectSprites, state, MAP_SCALE) {
   if (!mapData?.objects) return;
 
-  mapData.objects.forEach((obj) => {
-    if (!obj.visible) return;
-    if (obj.collected) return;
+  const visibleObjects = mapData.objects.filter(
+    (obj) => obj.visible && !obj.collected,
+  );
+  const orderedObjects = [
+    ...visibleObjects.filter(
+      (obj) =>
+        !(window.StatefulObjectManager?.isAlwaysOnTop(obj) ??
+          obj.alwaysOnTop === true),
+    ),
+    ...visibleObjects.filter(
+      (obj) =>
+        window.StatefulObjectManager?.isAlwaysOnTop(obj) ??
+        obj.alwaysOnTop === true,
+    ),
+  ];
+
+  orderedObjects.forEach((obj) => {
 
     // Una puerta abierta existe, pero su gráfico no se dibuja
     if (obj.type === "door" && obj.opened) {
@@ -307,18 +321,199 @@ function drawObjects(ctx, mapData, objectSprites, state, MAP_SCALE) {
 
     const screenX = Math.round((obj.x - state.camera.x) * MAP_SCALE);
     const screenY = Math.round((obj.y - state.camera.y) * MAP_SCALE);
+    const worldRenderSize = window.StatefulObjectManager?.getWorldRenderSize(
+      obj,
+    ) ?? {
+      width: obj.spriteWidth ?? obj.hitboxWidth,
+      height: obj.spriteHeight ?? obj.hitboxHeight,
+    };
 
     // ---------------------------------------------------
     // TAMAÑO VISUAL DEL SPRITE
     // ---------------------------------------------------
-    const drawWidth = (obj.spriteWidth ?? obj.hitboxWidth) * MAP_SCALE;
-    const drawHeight = (obj.spriteHeight ?? obj.hitboxHeight) * MAP_SCALE;
+    const drawWidth = worldRenderSize.width * MAP_SCALE;
+    const drawHeight = worldRenderSize.height * MAP_SCALE;
 
     // ---------------------------------------------------
     // DIBUJAR SPRITE
     // ---------------------------------------------------
     ctx.drawImage(sprite, screenX, screenY, drawWidth, drawHeight);
   });
+}
+
+function drawNpc(ctx, npc, npcSprites, state, MAP_SCALE) {
+  if (!NpcManager.isActive(npc)) return;
+
+  const libraryItem = NpcManager.getLibraryItem(npc);
+  const sprite = npcSprites?.[npc.typeId];
+  if (!libraryItem || !sprite) return;
+
+  const size = NpcManager.getSpriteSize(npc);
+  const frame = npc._animationFrame ?? 0;
+  const screenX = Math.round((npc.x - state.camera.x) * MAP_SCALE);
+  const screenY = Math.round((npc.y - state.camera.y) * MAP_SCALE);
+
+  ctx.drawImage(
+    sprite,
+    frame * libraryItem.frameWidth,
+    (libraryItem.animationRow ?? 0) * libraryItem.frameHeight,
+    libraryItem.frameWidth,
+    libraryItem.frameHeight,
+    screenX,
+    screenY,
+    size.width * MAP_SCALE,
+    size.height * MAP_SCALE,
+  );
+
+  RenderManager.drawNpcOverlay(ctx, npc, npcSprites, state, MAP_SCALE);
+}
+
+function drawNpcOverlay(ctx, npc, npcSprites, state, MAP_SCALE) {
+  const overlay = NpcManager.getOverlayAnimationDefinition?.(npc);
+  if (!overlay || !npc._overlayAnimationId) return false;
+
+  const sprite =
+    npcSprites?.[`${npc.typeId}:overlay:${npc._overlayAnimationId}`];
+  if (!sprite) return false;
+
+  const size = NpcManager.getSpriteSize(npc);
+  const frame = npc._overlayAnimationFrame ?? 0;
+  const screenX = Math.round((npc.x - state.camera.x) * MAP_SCALE);
+  const screenY = Math.round((npc.y - state.camera.y) * MAP_SCALE);
+
+  ctx.drawImage(
+    sprite,
+    frame * overlay.frameWidth,
+    (overlay.animationRow ?? 0) * overlay.frameHeight,
+    overlay.frameWidth,
+    overlay.frameHeight,
+    screenX,
+    screenY,
+    size.width * MAP_SCALE,
+    size.height * MAP_SCALE,
+  );
+
+  return true;
+}
+
+function drawWorldEntities(
+  ctx,
+  activePlayer,
+  state,
+  mapData,
+  playerSprites,
+  npcSprites,
+  MAP_SCALE,
+  PLAYER_SCALE,
+  FRAME_WIDTH,
+  FRAME_HEIGHT,
+) {
+  const currentMap = activePlayer.currentMap;
+  const characters = [state.player, ...state.companions].filter(
+    (character, index, list) =>
+      character.currentMap === currentMap &&
+      list.findIndex((item) => item.id === character.id) === index,
+  );
+
+  const jobs = characters.map((character, index) => ({
+    kind: "character",
+    entity: character,
+    sortY: character.y,
+    order: index + 1,
+  }));
+
+  mapData.npcs.forEach((npc, index) => {
+    if (!NpcManager.isActive(npc)) return;
+
+    const size = NpcManager.getSpriteSize(npc);
+    jobs.push({
+      kind: "npc",
+      entity: npc,
+      sortY: npc.y + size.height,
+      order: index,
+    });
+  });
+
+  jobs.sort((a, b) => a.sortY - b.sortY || a.order - b.order);
+
+  jobs.forEach((job) => {
+    if (job.kind === "npc") {
+      RenderManager.drawNpc(ctx, job.entity, npcSprites, state, MAP_SCALE);
+      return;
+    }
+
+    RenderManager.drawPlayer(
+      ctx,
+      job.entity,
+      state,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+    );
+  });
+}
+
+// -------------------------------------------------------
+// DIBUJA LOS GRÁFICOS TRASPASABLES DE PRIMER PLANO
+// -------------------------------------------------------
+function drawForegroundGraphics(
+  ctx,
+  mapData,
+  foregroundGraphicSprites,
+  state,
+  MAP_SCALE,
+) {
+  if (!Array.isArray(mapData?.foregroundGraphics)) return;
+
+  mapData.foregroundGraphics.forEach((graphic) => {
+    const libraryItem = window.ForegroundGraphicLibrary.find(
+      (item) => item.id === graphic.typeId,
+    );
+
+    if (!libraryItem || libraryItem.renderLayer !== "foreground") return;
+
+    const sprite = foregroundGraphicSprites?.[graphic.typeId];
+    if (!sprite) return;
+
+    const screenX = Math.round((graphic.x - state.camera.x) * MAP_SCALE);
+    const screenY = Math.round((graphic.y - state.camera.y) * MAP_SCALE);
+    const drawWidth =
+      (graphic.width ??
+        libraryItem.defaultSpriteWidth ??
+        sprite.naturalWidth) * MAP_SCALE;
+    const drawHeight =
+      (graphic.height ??
+        libraryItem.defaultSpriteHeight ??
+        sprite.naturalHeight) * MAP_SCALE;
+
+    ctx.drawImage(sprite, screenX, screenY, drawWidth, drawHeight);
+  });
+}
+
+function drawMapDarkness(
+  ctx,
+  canvas,
+  mapData,
+  objectSprites,
+  state,
+  activePlayer,
+  MAP_SCALE,
+) {
+  if (
+    !window.StatefulObjectManager?.isMapDark(
+      activePlayer?.currentMap,
+      mapData,
+    )
+  ) {
+    return false;
+  }
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.90)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  return true;
 }
 
 // -------------------------------------------------------
@@ -338,6 +533,8 @@ function render(
   FRAME_WIDTH,
   FRAME_HEIGHT,
   activePlayer,
+  foregroundGraphicSprites,
+  npcSprites,
 ) {
   if (!ctx) return;
 
@@ -354,26 +551,59 @@ function render(
 
   RenderManager.drawObjects(ctx, mapData, objectSprites, state, MAP_SCALE);
 
-  RenderManager.drawCompanions(
+  if (mapData?.npcs?.length) {
+    RenderManager.drawWorldEntities(
+      ctx,
+      activePlayer,
+      state,
+      mapData,
+      playerSprites,
+      npcSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+    );
+  } else {
+    RenderManager.drawCompanions(
+      ctx,
+      activePlayer,
+      state,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+    );
+
+    RenderManager.drawPlayer(
+      ctx,
+      activePlayer,
+      state,
+      playerSprites,
+      MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+    );
+  }
+
+  RenderManager.drawForegroundGraphics(
     ctx,
-    activePlayer,
+    mapData,
+    foregroundGraphicSprites,
     state,
-    playerSprites,
     MAP_SCALE,
-    PLAYER_SCALE,
-    FRAME_WIDTH,
-    FRAME_HEIGHT,
   );
 
-  RenderManager.drawPlayer(
+  RenderManager.drawMapDarkness(
     ctx,
-    activePlayer,
+    canvas,
+    mapData,
+    objectSprites,
     state,
-    playerSprites,
+    activePlayer,
     MAP_SCALE,
-    PLAYER_SCALE,
-    FRAME_WIDTH,
-    FRAME_HEIGHT,
   );
 }
 
@@ -388,5 +618,10 @@ window.RenderManager = {
   drawCompanions,
   drawMap,
   drawObjects,
+  drawNpc,
+  drawNpcOverlay,
+  drawWorldEntities,
+  drawForegroundGraphics,
+  drawMapDarkness,
   render,
 };

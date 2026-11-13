@@ -199,8 +199,15 @@ function createPathToTile(
 // BUSCA UNA CELDA CAMINABLE CERCA DE UN OBJETO <refactor>
 // -------------------------------------------------------
 function findInteractionTileForObject(obj, mapData) {
-  console.log(obj.id, obj.interactionTileX, obj.interactionTileY);
+  if (!obj || obj.visible === false || obj.collected) {
+    return null;
+  }
 
+  const blockingNpc =
+    window.NpcManager?.getBlockingNpcForObject?.(obj, mapData) ?? null;
+  if (blockingNpc) {
+    return PathfindingManager.findInteractionTileForNpc(blockingNpc, mapData);
+  }
 
   // -------------------------------------------------------
   // Casilla fija definida por el diseñador
@@ -217,6 +224,61 @@ function findInteractionTileForObject(obj, mapData) {
 
   const tileW = mapData.tileWidth;
   const tileH = mapData.tileHeight;
+
+  const libraryItem = window.ObjectLibrary?.find(
+    (item) => item.id === obj.typeId,
+  );
+  const interactionPosition =
+    obj.interactionPosition ?? libraryItem?.interactionPosition;
+  const interactionSide = obj.interactionSide ?? libraryItem?.interactionSide;
+
+  if (["left", "right", "above", "below"].includes(interactionSide)) {
+    const anchorObject =
+      mapData.objects?.find((item) => item.id === obj.interactionAnchorId) ??
+      obj;
+    const anchorCenterX = anchorObject.x + anchorObject.hitboxWidth / 2;
+    const anchorBottomY = anchorObject.y + anchorObject.hitboxHeight;
+    let tile;
+
+    if (interactionSide === "left") {
+      tile = {
+        col: Math.floor((anchorObject.x - tileW / 2) / tileW),
+        row: Math.floor(anchorBottomY / tileH),
+      };
+    } else if (interactionSide === "right") {
+      tile = {
+        col: Math.floor(
+          (anchorObject.x + anchorObject.hitboxWidth + tileW / 2) / tileW,
+        ),
+        row: Math.floor(anchorBottomY / tileH),
+      };
+    } else if (interactionSide === "above") {
+      tile = {
+        col: Math.floor(anchorCenterX / tileW),
+        row: Math.floor((anchorObject.y - tileH / 2) / tileH),
+      };
+    } else {
+      tile = {
+        col: Math.floor(anchorCenterX / tileW),
+        row: Math.floor(anchorBottomY / tileH),
+      };
+    }
+
+    return WorldManager.isWalkableTile(tile.col, tile.row, mapData)
+      ? tile
+      : null;
+  }
+
+  if (interactionPosition === "below") {
+    const tile = {
+      col: Math.floor((obj.x + obj.hitboxWidth / 2) / tileW),
+      row: Math.floor((obj.y + obj.hitboxHeight) / tileH),
+    };
+
+    return WorldManager.isWalkableTile(tile.col, tile.row, mapData)
+      ? tile
+      : null;
+  }
 
   // -------------------------------------------------------
   // OBJETOS QUE SE INTERACTÚAN DESDE DENTRO
@@ -280,6 +342,41 @@ function findInteractionTileForHotspot(hotspot, mapData) {
   );
 }
 
+function findInteractionTileForNpc(npc, mapData) {
+  if (!NpcManager.isActive(npc)) {
+    return null;
+  }
+
+  const rect = NpcManager.getCollisionRect(npc);
+  const tileW = mapData.tileWidth;
+  const tileH = mapData.tileHeight;
+  const centerCol = Math.floor((rect.x + rect.width / 2) / tileW);
+  const topRow = Math.floor(rect.y / tileH);
+  const bottomRow = Math.floor((rect.y + rect.height - 0.001) / tileH);
+  const leftCol = Math.floor(rect.x / tileW);
+  const rightCol = Math.floor((rect.x + rect.width - 0.001) / tileW);
+
+  const candidates = [
+    { col: centerCol, row: bottomRow + 1 },
+    { col: leftCol - 1, row: bottomRow },
+    { col: rightCol + 1, row: bottomRow },
+    { col: centerCol, row: topRow - 1 },
+  ];
+
+  for (const tile of candidates) {
+    if (WorldManager.isWalkableTile(tile.col, tile.row, mapData)) {
+      return tile;
+    }
+  }
+
+  return WorldManager.findNearestWalkableTile(
+    centerCol,
+    bottomRow,
+    mapData,
+    8,
+  );
+}
+
 // -------------------------------------------------------
 // Manager
 // -------------------------------------------------------
@@ -288,4 +385,5 @@ window.PathfindingManager = {
   createPathToTile,
   findInteractionTileForObject,
   findInteractionTileForHotspot,
+  findInteractionTileForNpc,
 };

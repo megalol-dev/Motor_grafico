@@ -7,6 +7,8 @@ Actualmente:
 
 - maps.js
 - objects.js
+- graficos_traspasables.js
+- npcs.js
 
 En el futuro:
 

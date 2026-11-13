@@ -17,4 +17,12 @@ window.GameState = {
 
   // Estados compartidos por las parejas de puertas
   doors: {},
+
+  // Variables globales reutilizables durante la partida
+  variables: {},
+
+  // Almacenamiento mágico compartido por todas las instancias del cofre 000
+  chest: {
+    items: [],
+  },
 };

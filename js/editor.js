@@ -33,6 +33,28 @@ window.EditorModule = (() => {
   let objectSprites = {};
 
   // -------------------------------------------------------
+  // GRÁFICOS TRASPASABLES DE PRIMER PLANO
+  // -------------------------------------------------------
+  let editorForegroundGraphics = [];
+  let foregroundGraphicSprites = {};
+  let selectedForegroundGraphic = null;
+  let draggingForegroundGraphic = false;
+  let foregroundDragOffsetX = 0;
+  let foregroundDragOffsetY = 0;
+  let pendingForegroundTypeId = null;
+
+  // -------------------------------------------------------
+  // NPC DEL EDITOR
+  // -------------------------------------------------------
+  let editorNpcs = [];
+  let npcSprites = {};
+  let selectedNpc = null;
+  let draggingNpc = false;
+  let npcDragOffsetX = 0;
+  let npcDragOffsetY = 0;
+  let pendingNpcTypeId = null;
+
+  // -------------------------------------------------------
   // HOTSPOTS DEL EDITOR
   // -------------------------------------------------------
   let editorHotspots = [];
@@ -72,6 +94,15 @@ window.EditorModule = (() => {
 
     window.ObjectLibrary.forEach((item) => {
       loadEditorObjectSprite(item.sprite);
+      Object.values(item.stateSprites ?? {}).forEach((sprite) => {
+        loadEditorObjectSprite(sprite);
+      });
+    });
+    window.ForegroundGraphicLibrary.forEach((item) => {
+      loadEditorForegroundGraphicSprite(item);
+    });
+    window.NpcLibrary.forEach((item) => {
+      loadEditorNpcSprite(item);
     });
     bindEvents();
     updateInspector();
@@ -83,6 +114,18 @@ window.EditorModule = (() => {
     const saveBtn = document.getElementById("save-map-btn");
 
     const toggleGridBtn = document.getElementById("toggle-grid-btn");
+    const addForegroundGraphicBtn = document.getElementById(
+      "add-foreground-graphic-btn",
+    );
+    const editForegroundGraphicBtn = document.getElementById(
+      "edit-foreground-graphic-btn",
+    );
+    const deleteForegroundGraphicBtn = document.getElementById(
+      "delete-foreground-graphic-mode-btn",
+    );
+    const addNpcBtn = document.getElementById("add-npc-btn");
+    const editNpcBtn = document.getElementById("edit-npc-btn");
+    const deleteNpcBtn = document.getElementById("delete-npc-btn");
     const paintBtn = document.getElementById("paint-collision-btn");
     const eraseBtn = document.getElementById("erase-mode-btn");
 
@@ -151,6 +194,51 @@ window.EditorModule = (() => {
       toggleGridBtn.dataset.bound = "true";
     }
 
+    if (addForegroundGraphicBtn && !addForegroundGraphicBtn.dataset.bound) {
+      addForegroundGraphicBtn.addEventListener("click", () => {
+        openForegroundGraphicPopup();
+      });
+      addForegroundGraphicBtn.dataset.bound = "true";
+    }
+
+    if (editForegroundGraphicBtn && !editForegroundGraphicBtn.dataset.bound) {
+      editForegroundGraphicBtn.addEventListener("click", () => {
+        activateTool("foreground-edit");
+      });
+      editForegroundGraphicBtn.dataset.bound = "true";
+    }
+
+    if (
+      deleteForegroundGraphicBtn &&
+      !deleteForegroundGraphicBtn.dataset.bound
+    ) {
+      deleteForegroundGraphicBtn.addEventListener("click", () => {
+        activateTool("foreground-delete");
+      });
+      deleteForegroundGraphicBtn.dataset.bound = "true";
+    }
+
+    if (addNpcBtn && !addNpcBtn.dataset.bound) {
+      addNpcBtn.addEventListener("click", () => {
+        openNpcPopup();
+      });
+      addNpcBtn.dataset.bound = "true";
+    }
+
+    if (editNpcBtn && !editNpcBtn.dataset.bound) {
+      editNpcBtn.addEventListener("click", () => {
+        activateTool("npc-edit");
+      });
+      editNpcBtn.dataset.bound = "true";
+    }
+
+    if (deleteNpcBtn && !deleteNpcBtn.dataset.bound) {
+      deleteNpcBtn.addEventListener("click", () => {
+        activateTool("npc-delete");
+      });
+      deleteNpcBtn.dataset.bound = "true";
+    }
+
     // ----------------------------------------------------
     // PINTAR COLISIONES
     // ----------------------------------------------------
@@ -159,6 +247,8 @@ window.EditorModule = (() => {
         currentTool = "paint";
 
         selectedObject = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
 
         updateToolButtons();
         updateInspector();
@@ -176,6 +266,8 @@ window.EditorModule = (() => {
         currentTool = "erase";
 
         selectedObject = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
 
         updateToolButtons();
         updateInspector();
@@ -192,6 +284,8 @@ window.EditorModule = (() => {
       editObjectBtn.addEventListener("click", () => {
         currentTool = "object";
         selectedHotspot = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
         updateToolButtons();
         updateInspector();
         draw();
@@ -207,6 +301,8 @@ window.EditorModule = (() => {
       addObjectBtn.addEventListener("click", () => {
         currentTool = "object-create";
         selectedHotspot = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
         updateToolButtons();
         addDefaultObject();
       });
@@ -223,6 +319,8 @@ window.EditorModule = (() => {
 
         selectedObject = null;
         selectedHotspot = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
 
         updateInspector();
         updateToolButtons();
@@ -241,6 +339,8 @@ window.EditorModule = (() => {
 
         selectedObject = null;
         selectedHotspot = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
 
         updateInspector();
         updateToolButtons();
@@ -259,6 +359,8 @@ window.EditorModule = (() => {
 
         selectedObject = null;
         selectedHotspot = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
 
         updateInspector();
         updateToolButtons();
@@ -278,6 +380,8 @@ window.EditorModule = (() => {
 
         selectedObject = null;
         selectedHotspot = null;
+        selectedForegroundGraphic = null;
+        selectedNpc = null;
 
         updateToolButtons();
         updateInspector();
@@ -293,6 +397,22 @@ window.EditorModule = (() => {
     // ----------------------------------------------------
     if (canvas && !canvas.dataset.bound) {
       canvas.addEventListener("mousedown", (e) => {
+        if (currentTool === "npc-create" && pendingNpcTypeId) {
+          addNpcAtPoint(pendingNpcTypeId, getCanvasPoint(e));
+          return;
+        }
+
+        if (
+          currentTool === "foreground-create" &&
+          pendingForegroundTypeId
+        ) {
+          addForegroundGraphicAtPoint(
+            pendingForegroundTypeId,
+            getCanvasPoint(e),
+          );
+          return;
+        }
+
         // ---------------------------------------------------
         // EMPEZAR A DIBUJAR PORTAL
         // ---------------------------------------------------
@@ -350,6 +470,22 @@ window.EditorModule = (() => {
         }
 
         if (tryDeleteObject(e)) {
+          return;
+        }
+
+        if (tryDeleteForegroundGraphic(e)) {
+          return;
+        }
+
+        if (tryDeleteNpc(e)) {
+          return;
+        }
+
+        if (trySelectForegroundGraphic(e)) {
+          return;
+        }
+
+        if (trySelectNpc(e)) {
           return;
         }
 
@@ -413,6 +549,16 @@ window.EditorModule = (() => {
         // ---------------------------------------------------
         if (draggingObject) {
           dragSelectedObject(e);
+          return;
+        }
+
+        if (draggingForegroundGraphic) {
+          dragSelectedForegroundGraphic(e);
+          return;
+        }
+
+        if (draggingNpc) {
+          dragSelectedNpc(e);
           return;
         }
 
@@ -512,6 +658,8 @@ window.EditorModule = (() => {
 
         draggingObject = false;
         draggingHotspot = false;
+        draggingForegroundGraphic = false;
+        draggingNpc = false;
       });
       canvas.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -528,9 +676,15 @@ window.EditorModule = (() => {
 
     selectedObject = null;
     selectedHotspot = null;
+    selectedForegroundGraphic = null;
+    selectedNpc = null;
 
     draggingObject = false;
     draggingHotspot = false;
+    draggingForegroundGraphic = false;
+    draggingNpc = false;
+    pendingForegroundTypeId = null;
+    pendingNpcTypeId = null;
 
     updateInspector();
     updateToolButtons();
@@ -546,6 +700,18 @@ window.EditorModule = (() => {
     const addHotspotBtn = document.getElementById("btn-add-hotspot");
     const editHotspotBtn = document.getElementById("btn-edit-hotspots");
     const deleteHotspotBtn = document.getElementById("btn-delete-hotspot");
+    const addForegroundGraphicBtn = document.getElementById(
+      "add-foreground-graphic-btn",
+    );
+    const editForegroundGraphicBtn = document.getElementById(
+      "edit-foreground-graphic-btn",
+    );
+    const deleteForegroundGraphicBtn = document.getElementById(
+      "delete-foreground-graphic-mode-btn",
+    );
+    const addNpcBtn = document.getElementById("add-npc-btn");
+    const editNpcBtn = document.getElementById("edit-npc-btn");
+    const deleteNpcBtn = document.getElementById("delete-npc-btn");
 
     // --------------------------------------
     // HABILITAR / DESHABILITAR ELIMINAR
@@ -563,6 +729,12 @@ window.EditorModule = (() => {
 
     addHotspotBtn.style.outline = "none";
     deleteHotspotBtn.style.outline = "none";
+    addForegroundGraphicBtn.style.outline = "none";
+    editForegroundGraphicBtn.style.outline = "none";
+    deleteForegroundGraphicBtn.style.outline = "none";
+    addNpcBtn.style.outline = "none";
+    editNpcBtn.style.outline = "none";
+    deleteNpcBtn.style.outline = "none";
 
     if (currentTool === "paint") {
       paintBtn.style.outline = "6px solid #000000";
@@ -594,6 +766,30 @@ window.EditorModule = (() => {
 
     if (currentTool === "hotspot-delete") {
       deleteHotspotBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "foreground-create") {
+      addForegroundGraphicBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "foreground-edit") {
+      editForegroundGraphicBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "foreground-delete") {
+      deleteForegroundGraphicBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "npc-create") {
+      addNpcBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "npc-edit") {
+      editNpcBtn.style.outline = "6px solid #000000";
+    }
+
+    if (currentTool === "npc-delete") {
+      deleteNpcBtn.style.outline = "6px solid #000000";
     }
   }
 
@@ -699,6 +895,178 @@ window.EditorModule = (() => {
     img.src = `./img/objects/${spriteName}`;
   }
 
+  function loadEditorForegroundGraphicSprite(libraryItem) {
+    if (!libraryItem?.sprite || foregroundGraphicSprites[libraryItem.id]) {
+      return;
+    }
+
+    const img = new Image();
+
+    img.onload = () => {
+      foregroundGraphicSprites[libraryItem.id] = img;
+      draw();
+    };
+
+    img.onerror = () => {
+      console.warn(
+        `No se pudo cargar el gráfico traspasable: ${libraryItem.sprite}`,
+      );
+    };
+
+    img.src = `./img/traspasables/${libraryItem.sprite}`;
+  }
+
+  function getForegroundLibraryItem(typeId) {
+    return window.ForegroundGraphicLibrary.find((item) => item.id === typeId);
+  }
+
+  function getForegroundGraphicSize(graphic) {
+    const libraryItem = getForegroundLibraryItem(graphic.typeId);
+    const sprite = foregroundGraphicSprites[graphic.typeId];
+
+    return {
+      width:
+        graphic.width ??
+        libraryItem?.defaultSpriteWidth ??
+        sprite?.naturalWidth ??
+        48,
+      height:
+        graphic.height ??
+        libraryItem?.defaultSpriteHeight ??
+        sprite?.naturalHeight ??
+        48,
+    };
+  }
+
+  function createForegroundGraphicId(typeId) {
+    let number = 1;
+    let id = `${typeId}_${number}`;
+
+    while (editorForegroundGraphics.some((graphic) => graphic.id === id)) {
+      number += 1;
+      id = `${typeId}_${number}`;
+    }
+
+    return id;
+  }
+
+  function addForegroundGraphicAtPoint(typeId, point) {
+    const libraryItem = getForegroundLibraryItem(typeId);
+    if (!image || !libraryItem) return;
+
+    const graphic = {
+      id: createForegroundGraphicId(typeId),
+      typeId,
+      x: point.x,
+      y: point.y,
+    };
+
+    editorForegroundGraphics.push(graphic);
+    selectedForegroundGraphic = graphic;
+    selectedObject = null;
+    selectedHotspot = null;
+
+    updateInspector();
+    updateToolButtons();
+    draw();
+  }
+
+  function loadEditorNpcSprite(libraryItem) {
+    if (!libraryItem?.sprite || npcSprites[libraryItem.id]) return;
+
+    const img = new Image();
+
+    img.onload = () => {
+      npcSprites[libraryItem.id] = img;
+      draw();
+    };
+
+    img.onerror = () => {
+      console.warn(`No se pudo cargar el sprite del NPC: ${libraryItem.sprite}`);
+    };
+
+    img.src = `./img/npcs/${libraryItem.sprite}`;
+  }
+
+  function getNpcLibraryItem(typeId) {
+    return window.NpcLibrary.find((item) => item.id === typeId);
+  }
+
+  function getEditorNpcSize(npc) {
+    const libraryItem = getNpcLibraryItem(npc.typeId);
+
+    return {
+      width:
+        npc.spriteWidth ??
+        libraryItem?.defaultSpriteWidth ??
+        libraryItem?.frameWidth ??
+        24,
+      height:
+        npc.spriteHeight ??
+        libraryItem?.defaultSpriteHeight ??
+        libraryItem?.frameHeight ??
+        60,
+    };
+  }
+
+  function cloneEditorNpcCollision(collision) {
+    return {
+      offsetX: Number(collision?.offsetX) || 0,
+      offsetY: Number(collision?.offsetY) || 0,
+      width: Math.max(1, Number(collision?.width) || 1),
+      height: Math.max(1, Number(collision?.height) || 1),
+    };
+  }
+
+  function getEditorNpcCollisionRect(npc) {
+    const libraryItem = getNpcLibraryItem(npc.typeId);
+    const collision = cloneEditorNpcCollision(
+      npc.collision ?? libraryItem?.defaultCollision,
+    );
+
+    return {
+      x: npc.x + collision.offsetX,
+      y: npc.y + collision.offsetY,
+      width: collision.width,
+      height: collision.height,
+    };
+  }
+
+  function createNpcId(typeId) {
+    let number = 1;
+    let id = `${typeId}_instance_${number}`;
+
+    while (editorNpcs.some((npc) => npc.id === id)) {
+      number += 1;
+      id = `${typeId}_instance_${number}`;
+    }
+
+    return id;
+  }
+
+  function addNpcAtPoint(typeId, point) {
+    const libraryItem = getNpcLibraryItem(typeId);
+    if (!image || !libraryItem) return;
+
+    const npc = {
+      id: createNpcId(typeId),
+      typeId,
+      x: point.x,
+      y: point.y,
+      collision: cloneEditorNpcCollision(libraryItem.defaultCollision),
+    };
+
+    editorNpcs.push(npc);
+    selectedNpc = npc;
+    selectedObject = null;
+    selectedHotspot = null;
+    selectedForegroundGraphic = null;
+
+    updateInspector();
+    updateToolButtons();
+    draw();
+  }
+
   // -------------------------------------------------------
   // DEVUELVE UN OBJETO DEL CATÁLOGO POR ID
   // -------------------------------------------------------
@@ -739,6 +1107,15 @@ window.EditorModule = (() => {
 
       type: libraryItem.type ?? "item",
       sprite: libraryItem.sprite,
+      state: libraryItem.defaultState ?? null,
+      stateSprites: libraryItem.stateSprites
+        ? { ...libraryItem.stateSprites }
+        : null,
+      containedObjectId: null,
+      blockedByNpcId: null,
+      alwaysOnTop: libraryItem.alwaysOnTop ?? false,
+      worldRenderWidth: libraryItem.worldRenderWidth ?? null,
+      worldRenderHeight: libraryItem.worldRenderHeight ?? null,
 
       visible: true,
 
@@ -798,6 +1175,10 @@ window.EditorModule = (() => {
 
     drawEditorObjects();
 
+    drawEditorNpcs();
+
+    drawEditorForegroundGraphics();
+
     // ------------------------------------------
     // HOTSPOTS YA CREADOS
     // ------------------------------------------
@@ -833,9 +1214,47 @@ window.EditorModule = (() => {
   // -------------------------------------------------------
   // DIBUJA OBJETOS DEL EDITOR
   // -------------------------------------------------------
+  function isEditorObjectAlwaysOnTop(obj) {
+    if (typeof obj?.alwaysOnTop === "boolean") return obj.alwaysOnTop;
+
+    return (
+      window.ObjectLibrary.find((item) => item.id === obj?.typeId)
+        ?.alwaysOnTop === true
+    );
+  }
+
+  function getEditorWorldRenderSize(obj) {
+    const libraryItem = window.ObjectLibrary.find(
+      (item) => item.id === obj?.typeId,
+    );
+
+    return {
+      width:
+        obj?.worldRenderWidth ??
+        libraryItem?.worldRenderWidth ??
+        obj?.spriteWidth ??
+        obj?.hitboxWidth ??
+        0,
+      height:
+        obj?.worldRenderHeight ??
+        libraryItem?.worldRenderHeight ??
+        obj?.spriteHeight ??
+        obj?.hitboxHeight ??
+        0,
+    };
+  }
+
+  function getEditorObjectsInDrawOrder() {
+    return [
+      ...editorObjects.filter((obj) => !isEditorObjectAlwaysOnTop(obj)),
+      ...editorObjects.filter((obj) => isEditorObjectAlwaysOnTop(obj)),
+    ];
+  }
+
   function drawEditorObjects() {
-    editorObjects.forEach((obj) => {
+    getEditorObjectsInDrawOrder().forEach((obj) => {
       const sprite = objectSprites[obj.sprite];
+      const worldRenderSize = getEditorWorldRenderSize(obj);
 
       ctx.save();
 
@@ -850,7 +1269,13 @@ window.EditorModule = (() => {
       // DIBUJAR SPRITE
       // --------------------------------------------
       if (sprite) {
-        ctx.drawImage(sprite, obj.x, obj.y, obj.spriteWidth, obj.spriteHeight);
+        ctx.drawImage(
+          sprite,
+          obj.x,
+          obj.y,
+          worldRenderSize.width,
+          worldRenderSize.height,
+        );
         // --------------------------------------------
         // PORTAL
         // --------------------------------------------
@@ -891,7 +1316,12 @@ window.EditorModule = (() => {
 
       ctx.lineWidth = 1;
 
-      ctx.strokeRect(obj.x, obj.y, obj.hitboxWidth, obj.hitboxHeight);
+      ctx.strokeRect(
+        obj.x,
+        obj.y,
+        worldRenderSize.width,
+        worldRenderSize.height,
+      );
 
       // --------------------------------------------
       // ID
@@ -900,6 +1330,88 @@ window.EditorModule = (() => {
       ctx.font = "10px Courier New";
 
       ctx.fillText(obj.id, obj.x, obj.y - 4);
+
+      ctx.restore();
+    });
+  }
+
+  function drawEditorForegroundGraphics() {
+    editorForegroundGraphics.forEach((graphic) => {
+      const libraryItem = getForegroundLibraryItem(graphic.typeId);
+      const sprite = foregroundGraphicSprites[graphic.typeId];
+      const size = getForegroundGraphicSize(graphic);
+
+      ctx.save();
+
+      if (sprite) {
+        ctx.drawImage(sprite, graphic.x, graphic.y, size.width, size.height);
+      } else {
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = "#ff9d00";
+        ctx.strokeRect(graphic.x, graphic.y, size.width, size.height);
+        ctx.fillStyle = "#ff9d00";
+        ctx.font = "10px Courier New";
+        ctx.fillText("PNG pendiente", graphic.x + 2, graphic.y + 12);
+      }
+
+      ctx.setLineDash([]);
+      ctx.strokeStyle =
+        graphic === selectedForegroundGraphic ? "#ffff00" : "#ff9d00";
+      ctx.strokeRect(graphic.x, graphic.y, size.width, size.height);
+      ctx.fillStyle = "#ff9d00";
+      ctx.font = "10px Courier New";
+      ctx.fillText(
+        `${graphic.id}${libraryItem ? "" : " (tipo desconocido)"}`,
+        graphic.x,
+        graphic.y - 4,
+      );
+
+      ctx.restore();
+    });
+  }
+
+  function drawEditorNpcs() {
+    editorNpcs.forEach((npc) => {
+      const libraryItem = getNpcLibraryItem(npc.typeId);
+      const sprite = npcSprites[npc.typeId];
+      const size = getEditorNpcSize(npc);
+      const collision = getEditorNpcCollisionRect(npc);
+
+      ctx.save();
+
+      if (sprite && libraryItem) {
+        ctx.drawImage(
+          sprite,
+          0,
+          (libraryItem.animationRow ?? 0) * libraryItem.frameHeight,
+          libraryItem.frameWidth,
+          libraryItem.frameHeight,
+          npc.x,
+          npc.y,
+          size.width,
+          size.height,
+        );
+      } else {
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = "#00aaff";
+        ctx.strokeRect(npc.x, npc.y, size.width, size.height);
+        ctx.fillStyle = "#00aaff";
+        ctx.font = "10px Courier New";
+        ctx.fillText("PNG NPC pendiente", npc.x + 2, npc.y + 12);
+      }
+
+      ctx.setLineDash([]);
+      ctx.strokeStyle = npc === selectedNpc ? "#ffff00" : "#00aaff";
+      ctx.strokeRect(npc.x, npc.y, size.width, size.height);
+
+      ctx.fillStyle = "rgba(255, 0, 0, 0.25)";
+      ctx.strokeStyle = "#ff3333";
+      ctx.fillRect(collision.x, collision.y, collision.width, collision.height);
+      ctx.strokeRect(collision.x, collision.y, collision.width, collision.height);
+
+      ctx.fillStyle = "#00aaff";
+      ctx.font = "10px Courier New";
+      ctx.fillText(npc.id, npc.x, npc.y - 4);
 
       ctx.restore();
     });
@@ -1021,14 +1533,17 @@ window.EditorModule = (() => {
 
     selectedObject = null;
 
-    for (let i = editorObjects.length - 1; i >= 0; i--) {
-      const obj = editorObjects[i];
+    const objectsInDrawOrder = getEditorObjectsInDrawOrder();
+
+    for (let i = objectsInDrawOrder.length - 1; i >= 0; i--) {
+      const obj = objectsInDrawOrder[i];
+      const worldRenderSize = getEditorWorldRenderSize(obj);
 
       if (
         mouseX >= obj.x &&
-        mouseX <= obj.x + obj.hitboxWidth &&
+        mouseX <= obj.x + worldRenderSize.width &&
         mouseY >= obj.y &&
-        mouseY <= obj.y + obj.hitboxHeight
+        mouseY <= obj.y + worldRenderSize.height
       ) {
         selectedObject = obj;
         selectedHotspot = null;
@@ -1043,6 +1558,131 @@ window.EditorModule = (() => {
 
         draw();
 
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function trySelectForegroundGraphic(e) {
+    if (currentTool !== "foreground-edit") {
+      return false;
+    }
+
+    const point = getCanvasPoint(e);
+    selectedForegroundGraphic = null;
+
+    for (let i = editorForegroundGraphics.length - 1; i >= 0; i -= 1) {
+      const graphic = editorForegroundGraphics[i];
+      const size = getForegroundGraphicSize(graphic);
+
+      if (
+        point.x >= graphic.x &&
+        point.x <= graphic.x + size.width &&
+        point.y >= graphic.y &&
+        point.y <= graphic.y + size.height
+      ) {
+        selectedForegroundGraphic = graphic;
+        selectedObject = null;
+        selectedHotspot = null;
+        draggingForegroundGraphic = true;
+        foregroundDragOffsetX = point.x - graphic.x;
+        foregroundDragOffsetY = point.y - graphic.y;
+
+        updateInspector();
+        draw();
+        return true;
+      }
+    }
+
+    updateInspector();
+    draw();
+    return false;
+  }
+
+  function tryDeleteForegroundGraphic(e) {
+    if (currentTool !== "foreground-delete") {
+      return false;
+    }
+
+    const point = getCanvasPoint(e);
+
+    for (let i = editorForegroundGraphics.length - 1; i >= 0; i -= 1) {
+      const graphic = editorForegroundGraphics[i];
+      const size = getForegroundGraphicSize(graphic);
+
+      if (
+        point.x >= graphic.x &&
+        point.x <= graphic.x + size.width &&
+        point.y >= graphic.y &&
+        point.y <= graphic.y + size.height
+      ) {
+        editorForegroundGraphics.splice(i, 1);
+        selectedForegroundGraphic = null;
+        updateInspector();
+        draw();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function trySelectNpc(e) {
+    if (currentTool !== "npc-edit") return false;
+
+    const point = getCanvasPoint(e);
+    selectedNpc = null;
+
+    for (let i = editorNpcs.length - 1; i >= 0; i -= 1) {
+      const npc = editorNpcs[i];
+      const size = getEditorNpcSize(npc);
+
+      if (
+        point.x >= npc.x &&
+        point.x <= npc.x + size.width &&
+        point.y >= npc.y &&
+        point.y <= npc.y + size.height
+      ) {
+        selectedNpc = npc;
+        selectedObject = null;
+        selectedHotspot = null;
+        selectedForegroundGraphic = null;
+        draggingNpc = true;
+        npcDragOffsetX = point.x - npc.x;
+        npcDragOffsetY = point.y - npc.y;
+
+        updateInspector();
+        draw();
+        return true;
+      }
+    }
+
+    updateInspector();
+    draw();
+    return false;
+  }
+
+  function tryDeleteNpc(e) {
+    if (currentTool !== "npc-delete") return false;
+
+    const point = getCanvasPoint(e);
+
+    for (let i = editorNpcs.length - 1; i >= 0; i -= 1) {
+      const npc = editorNpcs[i];
+      const size = getEditorNpcSize(npc);
+
+      if (
+        point.x >= npc.x &&
+        point.x <= npc.x + size.width &&
+        point.y >= npc.y &&
+        point.y <= npc.y + size.height
+      ) {
+        editorNpcs.splice(i, 1);
+        selectedNpc = null;
+        updateInspector();
+        draw();
         return true;
       }
     }
@@ -1178,6 +1818,32 @@ window.EditorModule = (() => {
     draw();
   }
 
+  function dragSelectedForegroundGraphic(e) {
+    if (currentTool !== "foreground-edit" || !selectedForegroundGraphic) {
+      return;
+    }
+
+    const point = getCanvasPoint(e);
+    selectedForegroundGraphic.x = Math.round(
+      point.x - foregroundDragOffsetX,
+    );
+    selectedForegroundGraphic.y = Math.round(
+      point.y - foregroundDragOffsetY,
+    );
+
+    draw();
+  }
+
+  function dragSelectedNpc(e) {
+    if (currentTool !== "npc-edit" || !selectedNpc) return;
+
+    const point = getCanvasPoint(e);
+    selectedNpc.x = Math.round(point.x - npcDragOffsetX);
+    selectedNpc.y = Math.round(point.y - npcDragOffsetY);
+
+    draw();
+  }
+
   // -------------------------------------------------------
   // ACTUALIZAR INSPECTOR
   // -------------------------------------------------------
@@ -1185,6 +1851,79 @@ window.EditorModule = (() => {
     const inspector = document.getElementById("editor-inspector");
 
     if (!inspector) return;
+
+    if (selectedNpc) {
+      const libraryItem = getNpcLibraryItem(selectedNpc.typeId);
+      const collision = cloneEditorNpcCollision(
+        selectedNpc.collision ?? libraryItem?.defaultCollision,
+      );
+
+      inspector.innerHTML = `
+        <strong>ID NPC</strong>
+        <p>${selectedNpc.id}</p>
+
+        <hr>
+
+        <strong>TIPO</strong>
+        <p>${libraryItem?.name ?? selectedNpc.typeId}</p>
+
+        <hr>
+
+        <strong>COLISIÓN RELATIVA</strong>
+
+        <label for="npc-collision-offset-x">Desplazamiento X</label>
+        <input id="npc-collision-offset-x" class="editor-input" type="number"
+          value="${collision.offsetX}">
+
+        <label for="npc-collision-offset-y">Desplazamiento Y</label>
+        <input id="npc-collision-offset-y" class="editor-input" type="number"
+          value="${collision.offsetY}">
+
+        <label for="npc-collision-width">Anchura</label>
+        <input id="npc-collision-width" class="editor-input" type="number"
+          min="1" value="${collision.width}">
+
+        <label for="npc-collision-height">Altura</label>
+        <input id="npc-collision-height" class="editor-input" type="number"
+          min="1" value="${collision.height}">
+      `;
+
+      selectedNpc.collision = collision;
+      bindNpcInspectorEvents();
+      return;
+    }
+
+    if (selectedForegroundGraphic) {
+      const options = window.ForegroundGraphicLibrary.map(
+        (item) => `
+          <option
+            value="${item.id}"
+            ${item.id === selectedForegroundGraphic.typeId ? "selected" : ""}
+          >
+            ${item.id} - ${item.name}
+          </option>
+        `,
+      ).join("");
+
+      inspector.innerHTML = `
+        <strong>ID GRÁFICO TRASPASABLE</strong>
+        <p>${selectedForegroundGraphic.id}</p>
+
+        <hr>
+
+        <strong>TIPO DE GRÁFICO</strong>
+        <select id="foreground-graphic-type" class="editor-input">
+          ${options}
+        </select>
+
+        <button id="delete-foreground-graphic-btn">
+          Eliminar gráfico traspasable
+        </button>
+      `;
+
+      bindForegroundGraphicInspectorEvents();
+      return;
+    }
 
     // -------------------------------------------------------
     // HOTSPOT SELECCIONADO
@@ -1256,6 +1995,25 @@ window.EditorModule = (() => {
           `
         : "";
 
+    const statefulFields =
+      selectedObject.type === "stateful"
+        ? `
+          <hr>
+
+          <strong>ESTADO INICIAL</strong>
+          <p>${selectedObject.state ?? "Sin estado"}</p>
+
+          <strong>ID DEL OBJETO CONTENIDO</strong>
+          <input
+            id="inspector-contained-object-id"
+            class="editor-input"
+            type="text"
+            value="${selectedObject.containedObjectId ?? ""}"
+            placeholder="Ej.: object_2"
+          >
+          `
+        : "";
+
     inspector.innerHTML = `
 
     <strong>ID ITEM MAP</strong>
@@ -1285,6 +2043,30 @@ ${window.ObjectLibrary.map(
 
 ${interactionButton}
 
+${statefulFields}
+
+<hr>
+
+<label>
+  <input
+    id="inspector-always-on-top"
+    type="checkbox"
+    ${isEditorObjectAlwaysOnTop(selectedObject) ? "checked" : ""}
+  >
+  Siempre por encima
+</label>
+
+<hr>
+
+<strong>ID DEL NPC BLOQUEADOR</strong>
+<input
+  id="inspector-blocked-by-npc-id"
+  class="editor-input"
+  type="text"
+  value="${selectedObject.blockedByNpcId ?? ""}"
+  placeholder="Ej.: NPC_1_instance_1"
+>
+
 `;
 
     bindInspectorEvents();
@@ -1293,6 +2075,15 @@ ${interactionButton}
   function bindInspectorEvents() {
     const spriteSelect = document.getElementById("inspector-sprite");
     const interactionBtn = document.getElementById("btn-set-interaction");
+    const containedObjectIdInput = document.getElementById(
+      "inspector-contained-object-id",
+    );
+    const alwaysOnTopInput = document.getElementById(
+      "inspector-always-on-top",
+    );
+    const blockedByNpcIdInput = document.getElementById(
+      "inspector-blocked-by-npc-id",
+    );
     if (!selectedObject) return;
 
     // ---------------------------------------------------
@@ -1307,6 +2098,17 @@ ${interactionButton}
         );
 
         selectedObject.typeId = libraryItem.id;
+        selectedObject.state = libraryItem.defaultState ?? null;
+        selectedObject.stateSprites = libraryItem.stateSprites
+          ? { ...libraryItem.stateSprites }
+          : null;
+        selectedObject.containedObjectId =
+          libraryItem.type === "stateful" ? "" : null;
+        selectedObject.blockedByNpcId = null;
+        selectedObject.alwaysOnTop = libraryItem.alwaysOnTop ?? false;
+        selectedObject.worldRenderWidth = libraryItem.worldRenderWidth ?? null;
+        selectedObject.worldRenderHeight =
+          libraryItem.worldRenderHeight ?? null;
         selectedObject.doorPair = libraryItem.doorPair ?? null;
         selectedObject.closedSprite = libraryItem.closedSprite ?? null;
         selectedObject.requiredItem = libraryItem.requiredItem ?? null;
@@ -1342,11 +2144,35 @@ ${interactionButton}
         selectedObject.interactionTileY = libraryItem.interactionTileY ?? null;
 
         loadEditorObjectSprite(selectedObject.sprite);
+        Object.values(selectedObject.stateSprites ?? {}).forEach((sprite) => {
+          loadEditorObjectSprite(sprite);
+        });
 
         updateInspector();
         updateToolButtons();
 
         draw();
+      });
+    }
+
+    if (containedObjectIdInput) {
+      containedObjectIdInput.addEventListener("input", () => {
+        selectedObject.containedObjectId =
+          containedObjectIdInput.value.trim() || null;
+      });
+    }
+
+    if (alwaysOnTopInput) {
+      alwaysOnTopInput.addEventListener("change", () => {
+        selectedObject.alwaysOnTop = alwaysOnTopInput.checked;
+        draw();
+      });
+    }
+
+    if (blockedByNpcIdInput) {
+      blockedByNpcIdInput.addEventListener("input", () => {
+        selectedObject.blockedByNpcId =
+          blockedByNpcIdInput.value.trim() || null;
       });
     }
 
@@ -1376,6 +2202,58 @@ ${interactionButton}
       selectedHotspot.typeId = select.value;
 
       draw();
+    });
+  }
+
+  function bindForegroundGraphicInspectorEvents() {
+    const typeSelect = document.getElementById("foreground-graphic-type");
+    const deleteButton = document.getElementById(
+      "delete-foreground-graphic-btn",
+    );
+
+    if (typeSelect) {
+      typeSelect.addEventListener("change", () => {
+        selectedForegroundGraphic.typeId = typeSelect.value;
+        loadEditorForegroundGraphicSprite(
+          getForegroundLibraryItem(selectedForegroundGraphic.typeId),
+        );
+        draw();
+      });
+    }
+
+    if (deleteButton) {
+      deleteButton.addEventListener("click", () => {
+        editorForegroundGraphics = editorForegroundGraphics.filter(
+          (graphic) => graphic !== selectedForegroundGraphic,
+        );
+        selectedForegroundGraphic = null;
+        updateInspector();
+        draw();
+      });
+    }
+  }
+
+  function bindNpcInspectorEvents() {
+    const fields = [
+      ["npc-collision-offset-x", "offsetX", false],
+      ["npc-collision-offset-y", "offsetY", false],
+      ["npc-collision-width", "width", true],
+      ["npc-collision-height", "height", true],
+    ];
+
+    fields.forEach(([id, property, positive]) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+
+      input.addEventListener("input", () => {
+        if (!selectedNpc) return;
+
+        const value = Number(input.value);
+        if (!Number.isFinite(value)) return;
+
+        selectedNpc.collision[property] = positive ? Math.max(1, value) : value;
+        draw();
+      });
     });
   }
 
@@ -1450,7 +2328,20 @@ ${interactionButton}
       obj.doorPair = libraryItem.doorPair ?? null;
       obj.typeId = libraryItem.id;
       obj.type = libraryItem.type ?? "item";
-      obj.sprite = libraryItem.sprite;
+      obj.state ??= libraryItem.defaultState ?? null;
+      obj.stateSprites = libraryItem.stateSprites
+        ? { ...libraryItem.stateSprites }
+        : null;
+      obj.containedObjectId =
+        libraryItem.type === "stateful"
+          ? obj.containedObjectId ?? null
+          : null;
+      obj.blockedByNpcId = obj.blockedByNpcId?.trim() || null;
+      obj.alwaysOnTop ??= libraryItem.alwaysOnTop ?? false;
+      obj.worldRenderWidth ??= libraryItem.worldRenderWidth ?? null;
+      obj.worldRenderHeight ??= libraryItem.worldRenderHeight ?? null;
+      obj.sprite =
+        obj.stateSprites?.[obj.state] ?? libraryItem.sprite;
       obj.name = libraryItem.name;
       obj.requiredItem = libraryItem.requiredItem ?? null;
       obj.locked = libraryItem.locked ?? false;
@@ -1477,6 +2368,25 @@ ${interactionButton}
       objects: editorObjects,
 
       hotspots: editorHotspots,
+
+      foregroundGraphics: editorForegroundGraphics.map((graphic) => ({
+        id: graphic.id,
+        typeId: graphic.typeId,
+        x: graphic.x,
+        y: graphic.y,
+        ...(graphic.width == null ? {} : { width: graphic.width }),
+        ...(graphic.height == null ? {} : { height: graphic.height }),
+      })),
+
+      npcs: editorNpcs.map((npc) => ({
+        id: npc.id,
+        typeId: npc.typeId,
+        x: npc.x,
+        y: npc.y,
+        collision: cloneEditorNpcCollision(npc.collision),
+        ...(npc.spriteWidth == null ? {} : { spriteWidth: npc.spriteWidth }),
+        ...(npc.spriteHeight == null ? {} : { spriteHeight: npc.spriteHeight }),
+      })),
     };
 
     const blob = new Blob(
@@ -1552,6 +2462,103 @@ ${interactionButton}
     popup.classList.remove("hidden");
   }
 
+  function openForegroundGraphicPopup() {
+    const popup = document.getElementById("editor-popup");
+    const popupTitle = document.getElementById("editor-popup-title");
+    const popupContent = document.getElementById("editor-popup-content");
+
+    popupTitle.textContent = "Añadir traspasable";
+    popupContent.innerHTML = "";
+
+    const list = document.createElement("div");
+    list.className = "foreground-graphic-list";
+
+    window.ForegroundGraphicLibrary.forEach((item) => {
+      const card = createVisualCatalogCard(
+        item,
+        "./img/traspasables/",
+        () => {
+        activateTool("foreground-create");
+        pendingForegroundTypeId = item.id;
+        closeEditorPopup();
+        },
+      );
+      list.appendChild(card);
+    });
+
+    popupContent.appendChild(list);
+    popup.classList.remove("hidden");
+  }
+
+  function openNpcPopup() {
+    const popup = document.getElementById("editor-popup");
+    const popupTitle = document.getElementById("editor-popup-title");
+    const popupContent = document.getElementById("editor-popup-content");
+
+    popupTitle.textContent = "Crear NPC";
+    popupContent.innerHTML = "";
+
+    const list = document.createElement("div");
+    list.className = "foreground-graphic-list";
+
+    window.NpcLibrary.forEach((item) => {
+      const card = createVisualCatalogCard(item, "./img/npcs/", () => {
+        activateTool("npc-create");
+        pendingNpcTypeId = item.id;
+        closeEditorPopup();
+      });
+
+      list.appendChild(card);
+    });
+
+    popupContent.appendChild(list);
+    popup.classList.remove("hidden");
+  }
+
+  function createVisualCatalogCard(item, imageFolder, onSelect) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "foreground-graphic-card";
+
+    const preview = document.createElement("span");
+    preview.className = "foreground-graphic-preview";
+
+    const thumbnail = document.createElement("img");
+    thumbnail.className = "foreground-graphic-thumbnail";
+    thumbnail.alt = item.name;
+
+    const unavailable = document.createElement("span");
+    unavailable.className = "foreground-graphic-unavailable is-hidden";
+    unavailable.textContent = "Imagen no disponible";
+
+    thumbnail.addEventListener("error", () => {
+      thumbnail.classList.add("is-hidden");
+      unavailable.classList.remove("is-hidden");
+    });
+    thumbnail.src = `${imageFolder}${item.sprite}`;
+
+    preview.appendChild(thumbnail);
+    preview.appendChild(unavailable);
+
+    const info = document.createElement("span");
+    info.className = "foreground-graphic-info";
+
+    const name = document.createElement("strong");
+    name.textContent = item.name;
+
+    const id = document.createElement("small");
+    id.textContent = item.id;
+
+    info.appendChild(name);
+    info.appendChild(id);
+
+    card.addEventListener("click", onSelect);
+    card.appendChild(preview);
+    card.appendChild(info);
+
+    return card;
+  }
+
   // =======================================================
   // CERRAR POPUP
   // =======================================================
@@ -1605,6 +2612,8 @@ ${interactionButton}
     rows = data.rows;
     grid = data.walkable;
     editorObjects = data.objects ?? [];
+    editorForegroundGraphics = data.foregroundGraphics ?? [];
+    editorNpcs = data.npcs ?? [];
 
     // --------------------------------------------------
     // COMPLETAR DATOS DESDE EL CATÁLOGO
@@ -1629,6 +2638,20 @@ ${interactionButton}
 
       obj.typeId ??= libraryItem.id;
       obj.type ??= libraryItem.type ?? "item";
+      obj.state ??= libraryItem.defaultState ?? null;
+      obj.stateSprites ??= libraryItem.stateSprites
+        ? { ...libraryItem.stateSprites }
+        : null;
+      obj.containedObjectId ??= null;
+      obj.blockedByNpcId ??= null;
+      obj.alwaysOnTop ??= libraryItem.alwaysOnTop ?? false;
+      obj.worldRenderWidth ??= libraryItem.worldRenderWidth ?? null;
+      obj.worldRenderHeight ??= libraryItem.worldRenderHeight ?? null;
+      obj.sprite = obj.stateSprites?.[obj.state] ?? obj.sprite;
+      if (libraryItem.type === "stateful") {
+        obj.spriteWidth = libraryItem.defaultSpriteWidth;
+        obj.spriteHeight = libraryItem.defaultSpriteHeight;
+      }
       obj.pickup ??= libraryItem.pickup ?? false;
       obj.locked ??= libraryItem.locked ?? false;
       obj.opened ??= libraryItem.opened ?? false;
@@ -1656,14 +2679,38 @@ ${interactionButton}
 
     editorHotspots = data.hotspots ?? [];
 
+    editorNpcs.forEach((npc) => {
+      const libraryItem = getNpcLibraryItem(npc.typeId);
+      npc.collision = cloneEditorNpcCollision(
+        npc.collision ?? libraryItem?.defaultCollision,
+      );
+    });
+
     selectedObject = null;
     selectedHotspot = null;
+    selectedForegroundGraphic = null;
+    selectedNpc = null;
+    pendingForegroundTypeId = null;
+    pendingNpcTypeId = null;
     //--------------------------------------------------
     // Cargar sprites de los objetos
     //--------------------------------------------------
 
     editorObjects.forEach((obj) => {
       loadEditorObjectSprite(obj.sprite);
+      Object.values(obj.stateSprites ?? {}).forEach((sprite) => {
+        loadEditorObjectSprite(sprite);
+      });
+    });
+
+    editorForegroundGraphics.forEach((graphic) => {
+      loadEditorForegroundGraphicSprite(
+        getForegroundLibraryItem(graphic.typeId),
+      );
+    });
+
+    editorNpcs.forEach((npc) => {
+      loadEditorNpcSprite(getNpcLibraryItem(npc.typeId));
     });
 
     updateInspector();

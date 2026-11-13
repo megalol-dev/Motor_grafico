@@ -99,6 +99,8 @@ function bindUiEvents() {
       JSON.stringify(state.selectedParty)
     );
 
+    window.ChestManager?.reset();
+
     setScreen('game');
   });
 
@@ -136,6 +138,8 @@ function bindUiEvents() {
         'selectedParty',
         JSON.stringify(state.selectedParty)
       );
+
+      window.ChestManager?.reset();
 
       setScreen('game');
     }

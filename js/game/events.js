@@ -15,6 +15,14 @@
 // la lógica específica en los managers correspondientes.
 // =======================================================
 
+function cancelPendingInteractions(state) {
+  state.pendingInteraction = null;
+  state.pendingHotspot = null;
+  state.pendingNpc = null;
+  state.pendingNpcDistance = null;
+  state.pendingTeleport = null;
+}
+
 // -------------------------------------------------------
 // EVENTOS DE LOS BOTONES DE PERSONAJES
 // -------------------------------------------------------
@@ -35,6 +43,11 @@ function bindCharacterButtons(
       event.preventDefault();
       event.stopPropagation();
 
+      if (
+        window.ChestManager?.isOpen() ||
+        window.NpcManager?.isInsecticideEventPending?.()
+      ) return;
+
       const selected = button.dataset.character;
 
       if (!selected) {
@@ -47,9 +60,8 @@ function bindCharacterButtons(
       state.target.active = false;
       state.path = [];
       state.pathIndex = 0;
-      state.pendingInteraction = null;
-      state.pendingHotspot = null;
-      state.pendingTeleport = null;
+      cancelPendingInteractions(state);
+      InventoryManager.clearSelectedInventoryItem(state, actionLine);
 
       state.player.moving = false;
 
@@ -94,11 +106,18 @@ function bindCharacterButtons(
 function bindVerbButtons(verbButtons, state, actionLine) {
   verbButtons.forEach((button) => {
     button.addEventListener("click", () => {
+      if (
+        window.ChestManager?.isOpen() ||
+        window.NpcManager?.isInsecticideEventPending?.()
+      ) return;
+
       const verb = window.VerbLibrary.find((v) => v.id === button.dataset.verb);
 
       if (!verb) {
         return;
       }
+
+      const previousVerb = state.currentVerb.toLowerCase();
 
       // Quitar selección anterior
       verbButtons.forEach((btn) => btn.classList.remove("active-verb"));
@@ -109,18 +128,22 @@ function bindVerbButtons(verbButtons, state, actionLine) {
       state.currentVerb = verb.id;
 
       if (state.currentVerb !== "use") {
-        state.selectedInventoryItem = null;
-        InventoryManager.refreshInventoryUI(state, actionLine);
+        InventoryManager.clearSelectedInventoryItem(state, actionLine);
+
+        if (previousVerb === "use") {
+          cancelPendingInteractions(state);
+        }
       }
 
       if (actionLine) {
-        actionLine.textContent = `${verb.label} ...`;
+        actionLine.textContent = window.VerbManager.formatPrompt(verb.id);
       }
     });
   });
 }
 
 function selectDefaultVerb(state, actionLine, keepMessage = false) {
+  InventoryManager.clearSelectedInventoryItem(state, actionLine);
   state.currentVerb = "Walk to";
 
   const verbButtons = document.querySelectorAll(".verb-btn");
@@ -134,7 +157,7 @@ function selectDefaultVerb(state, actionLine, keepMessage = false) {
   });
 
   if (!keepMessage && actionLine) {
-    actionLine.textContent = "Walk to ...";
+    actionLine.textContent = window.VerbManager.formatPrompt("Walk to");
   }
 }
 
@@ -150,6 +173,14 @@ function bindCanvasHover(
   getVerbLabel,
 ) {
   canvas.addEventListener("mousemove", (event) => {
+    if (
+      window.DialogueManager?.isActive() ||
+      window.ChestManager?.isOpen() ||
+      window.NpcManager?.isInsecticideEventPending?.()
+    ) {
+      return;
+    }
+
     if (state.messageTimeout) {
       return;
     }
@@ -182,18 +213,45 @@ function bindCanvasHover(
       mapData,
     );
 
+    const hoveredNpc = InteractionManager.getNpcAt(
+      worldPoint.x,
+      worldPoint.y,
+      mapData,
+    );
+
+    if (hoveredNpc) {
+      const libraryItem = NpcManager.getLibraryItem(hoveredNpc);
+
+      if (libraryItem && actionLine) {
+        actionLine.textContent = window.VerbManager.formatTarget(
+          state.currentVerb,
+          libraryItem.name,
+        );
+      }
+
+      return;
+    }
+
     // ---------------------------------------------------
     // OBJETO BAJO EL RATÓN
     // ---------------------------------------------------
     if (hoveredObject) {
+      const hoveredObjectName = InteractionManager.getObjectName(hoveredObject);
+
       if (actionLine) {
         if (
           state.currentVerb.toLowerCase() === "use" &&
           state.selectedInventoryItem
         ) {
-          actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hoveredObject.name}`;
+          actionLine.textContent = window.VerbManager.formatUseWith(
+            state.selectedInventoryItem.name,
+            hoveredObjectName,
+          );
         } else {
-          actionLine.textContent = `${state.currentVerb} ${hoveredObject.name}`;
+          actionLine.textContent = window.VerbManager.formatTarget(
+            state.currentVerb,
+            hoveredObjectName,
+          );
         }
       }
 
@@ -212,9 +270,15 @@ function bindCanvasHover(
           state.currentVerb.toLowerCase() === "use" &&
           state.selectedInventoryItem
         ) {
-          actionLine.textContent = `Use ${state.selectedInventoryItem.name} with ${hotspotItem.name}`;
+          actionLine.textContent = window.VerbManager.formatUseWith(
+            state.selectedInventoryItem.name,
+            hotspotItem.name,
+          );
         } else {
-          actionLine.textContent = `${state.currentVerb} ${hotspotItem.name}`;
+          actionLine.textContent = window.VerbManager.formatTarget(
+            state.currentVerb,
+            hotspotItem.name,
+          );
         }
       }
 
@@ -229,9 +293,13 @@ function bindCanvasHover(
         state.currentVerb.toLowerCase() === "use" &&
         state.selectedInventoryItem
       ) {
-        actionLine.textContent = `Use ${state.selectedInventoryItem.name} with...`;
+        actionLine.textContent = window.VerbManager.formatUseWith(
+          state.selectedInventoryItem.name,
+        );
       } else {
-        actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
+        actionLine.textContent = window.VerbManager.formatPrompt(
+          state.currentVerb,
+        );
       }
     }
   });
@@ -248,7 +316,7 @@ function clearTemporaryMessage(state, actionLine, getVerbLabel) {
   state.messageTimeout = null;
 
   if (actionLine) {
-    actionLine.textContent = `${getVerbLabel(state.currentVerb)} ...`;
+    actionLine.textContent = window.VerbManager.formatPrompt(state.currentVerb);
   }
 }
 
@@ -265,6 +333,8 @@ function prepareObjectInteraction(
 ) {
   const mapData = getMapData();
 
+  cancelPendingInteractions(state);
+
   if (!mapData) {
     return false;
   }
@@ -274,20 +344,9 @@ function prepareObjectInteraction(
     mapData,
   );
 
-  console.log("Puerta:", clickedObject.name);
-  console.log("Casilla:", interactionTile);
-  console.log(
-    "Walkable:",
-    WorldManager.isWalkableTile(
-      interactionTile.col,
-      interactionTile.row,
-      mapData,
-    ),
-  );
-
   if (!interactionTile) {
     InteractionManager.showTemporaryMessage(
-      `No puedo llegar a ${clickedObject.name}`,
+      `No puedo llegar a ${InteractionManager.getObjectName(clickedObject)}`,
       state,
       actionLine,
     );
@@ -314,6 +373,9 @@ function prepareObjectInteraction(
     return false;
   }
 
+  state.pendingNpc = null;
+  state.pendingNpcDistance = null;
+  state.pendingHotspot = null;
   state.pendingInteraction = clickedObject;
 
   return true;
@@ -358,7 +420,7 @@ function handleClickedObject(
   // ---------------------------------------------------
   if (verb === "what is") {
     InteractionManager.showTemporaryMessage(
-      clickedObject.description,
+      InteractionManager.getObjectDescription(clickedObject),
       state,
       actionLine,
     );
@@ -409,6 +471,7 @@ function handleClickedObject(
         FOOT_OFFSET_Y,
       )
     ) {
+      InventoryManager.clearSelectedInventoryItem(state, actionLine);
       return;
     }
 
@@ -465,6 +528,8 @@ function handleClickedHotspot(
   const verb = state.currentVerb.toLowerCase();
   const mapData = getMapData();
 
+  cancelPendingInteractions(state);
+
   // ---------------------------------------------------
   // WHAT IS -> NO CAMINAR
   // ---------------------------------------------------
@@ -490,6 +555,8 @@ function handleClickedHotspot(
       actionLine,
     );
 
+    InventoryManager.clearSelectedInventoryItem(state, actionLine);
+
     return;
   }
 
@@ -509,10 +576,87 @@ function handleClickedHotspot(
       actionLine,
     );
 
+    InventoryManager.clearSelectedInventoryItem(state, actionLine);
+
     return;
   }
 
+  state.pendingInteraction = null;
+  state.pendingNpc = null;
+  state.pendingNpcDistance = null;
   state.pendingHotspot = clickedHotspot;
+}
+
+function prepareNpcInteraction(
+  clickedNpc,
+  state,
+  actionLine,
+  getMapData,
+  getActiveCharacter,
+  FOOT_OFFSET_Y,
+) {
+  const mapData = getMapData();
+  cancelPendingInteractions(state);
+  const targetTile = PathfindingManager.findInteractionTileForNpc(
+    clickedNpc,
+    mapData,
+  );
+
+  if (
+    !targetTile ||
+    !PathfindingManager.createPathToTile(
+      targetTile.col,
+      targetTile.row,
+      getActiveCharacter(),
+      state,
+      mapData,
+      FOOT_OFFSET_Y,
+    )
+  ) {
+    InteractionManager.showTemporaryMessage(
+      "No encuentro un camino.",
+      state,
+      actionLine,
+    );
+    InventoryManager.clearSelectedInventoryItem(state, actionLine);
+    return false;
+  }
+
+  const player = getActiveCharacter();
+  const collision = NpcManager.getCollisionRect(clickedNpc);
+  const targetX = collision.x + collision.width / 2;
+  const targetY = collision.y + collision.height / 2;
+
+  state.pendingInteraction = null;
+  state.pendingHotspot = null;
+  state.pendingNpc = clickedNpc;
+  state.pendingNpcDistance = Math.hypot(targetX - player.x, targetY - player.y);
+
+  MovementManager.updateDirectionFromVector(
+    targetX - player.x,
+    targetY - player.y,
+    player,
+  );
+
+  return true;
+}
+
+function handleClickedNpc(
+  clickedNpc,
+  state,
+  actionLine,
+  getMapData,
+  getActiveCharacter,
+  FOOT_OFFSET_Y,
+) {
+  prepareNpcInteraction(
+    clickedNpc,
+    state,
+    actionLine,
+    getMapData,
+    getActiveCharacter,
+    FOOT_OFFSET_Y,
+  );
 }
 
 // -------------------------------------------------------
@@ -527,6 +671,12 @@ function handleGroundClick(
   FOOT_OFFSET_Y,
   getVerbLabel,
 ) {
+  const wasUsingSelectedItem =
+    state.currentVerb.toLowerCase() === "use" && state.selectedInventoryItem;
+
+  cancelPendingInteractions(state);
+  InventoryManager.clearSelectedInventoryItem(state, actionLine);
+
   const mapData = getMapData();
 
   const clickedCol = Math.floor(worldPoint.x / mapData.tileWidth);
@@ -569,15 +719,9 @@ function handleGroundClick(
     return;
   }
 
-  state.pendingInteraction = null;
-  state.pendingHotspot = null;
-
-  // Si estamos usando un objeto del inventario,
-  // no cancelar el modo USE.
-  if (
-    state.currentVerb.toLowerCase() !== "use" ||
-    !state.selectedInventoryItem
-  ) {
+  // Un clic de suelo cancela el objeto seleccionado, pero conserva el verbo
+  // USE tal como hacía el flujo anterior mientras existía una selección.
+  if (!wasUsingSelectedItem) {
     EventsManager.selectDefaultVerb(state, actionLine);
   }
 }
@@ -601,6 +745,14 @@ function bindGameEvents(
 )  {
   // CLICK EN EL CANVAS
   canvas.addEventListener("click", (event) => {
+    if (
+      window.DialogueManager?.isActive() ||
+      window.ChestManager?.isOpen() ||
+      window.NpcManager?.isInsecticideEventPending?.()
+    ) {
+      return;
+    }
+
     // evitar clicks de UI
     if (event.target.closest(".player-btn")) {
       return;
@@ -621,6 +773,8 @@ function bindGameEvents(
     const worldPoint = getWorldPointFromClick(event);
 
     if (!worldPoint) {
+      cancelPendingInteractions(state);
+      InventoryManager.clearSelectedInventoryItem(state, actionLine);
       return;
     }
 
@@ -635,6 +789,38 @@ function bindGameEvents(
       worldPoint.y,
       mapData,
     );
+
+    const clickedNpc = InteractionManager.getNpcAt(
+      worldPoint.x,
+      worldPoint.y,
+      mapData,
+    );
+
+    const clickedTarget = clickedNpc ?? clickedObject ?? clickedHotspot;
+    if (
+      clickedTarget &&
+      InteractionManager.blockInteractionInDarkness(
+        clickedTarget,
+        state,
+        actionLine,
+        getCurrentMapName(),
+        mapData,
+      )
+    ) {
+      return;
+    }
+
+    if (clickedNpc) {
+      handleClickedNpc(
+        clickedNpc,
+        state,
+        actionLine,
+        getMapData,
+        getActiveCharacter,
+        FOOT_OFFSET_Y,
+      );
+      return;
+    }
 
     if (clickedObject) {
       handleClickedObject(
@@ -699,12 +885,15 @@ function bindGameEvents(
 window.EventsManager = {
   bindCharacterButtons,
   bindVerbButtons,
+  cancelPendingInteractions,
   bindCanvasHover,
   clearTemporaryMessage,
   prepareObjectInteraction,
   handleDefaultObjectVerb,
   handleClickedObject,
   handleClickedHotspot,
+  prepareNpcInteraction,
+  handleClickedNpc,
   handleGroundClick,
   bindGameEvents,
   selectDefaultVerb,

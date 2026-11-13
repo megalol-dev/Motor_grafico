@@ -208,6 +208,16 @@
 
     font-family: "Courier New", monospace;
 
+    padding: 8px 12px;
+
+    background: #ffffff;
+
+    border: none;
+
+    color: #000000;
+
+    cursor: pointer;
+
 }
 
 .editor-workspace {
@@ -365,4 +375,85 @@
 
     height: 40px;
 
+}
+
+/* ===================================================== */
+/* SELECTOR DE GRÁFICOS TRASPASABLES */
+/* ===================================================== */
+
+.foreground-graphic-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.foreground-graphic-card {
+    min-height: 104px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #333333;
+    border: 2px solid #555555;
+    color: #ffffff;
+    cursor: pointer;
+    font-family: "Courier New", monospace;
+    text-align: left;
+}
+
+.foreground-graphic-card:hover,
+.foreground-graphic-card:focus-visible {
+    border-color: #ffffff;
+    outline: 2px solid #aa0000;
+}
+
+.foreground-graphic-preview {
+    width: 112px;
+    height: 80px;
+    flex: 0 0 112px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #202020;
+    background-image:
+        linear-gradient(45deg, #2b2b2b 25%, transparent 25%),
+        linear-gradient(-45deg, #2b2b2b 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #2b2b2b 75%),
+        linear-gradient(-45deg, transparent 75%, #2b2b2b 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    overflow: hidden;
+}
+
+.foreground-graphic-thumbnail {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.foreground-graphic-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.foreground-graphic-info small {
+    color: #bbbbbb;
+}
+
+.foreground-graphic-unavailable {
+    padding: 5px;
+    color: #bbbbbb;
+    font-size: 10px;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.is-hidden {
+    display: none;
 }

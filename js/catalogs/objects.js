@@ -82,6 +82,32 @@
 
 window.ObjectLibrary = [
   // ---------------------------------------------
+  // Objeto 000 - COFRE MÁGICO
+  // Dimensiones provisionales hasta incorporar el PNG.
+  // ---------------------------------------------
+  {
+    id: "000",
+    type: "object",
+    name: "Cofre Mágico",
+
+    description:
+      "Un misterioso cofre mágico. Parece capaz de guardar muchas cosas.",
+
+    sprite: "000_cofreMagico.png",
+
+    defaultSpriteWidth: 54,
+    defaultSpriteHeight: 30,
+
+    defaultHitboxWidth: 54,
+    defaultHitboxHeight: 30,
+
+    pickup: false,
+    transferable: false,
+    solid: true,
+    interactionPosition: "below",
+  },
+
+  // ---------------------------------------------
   // Item - LLAVE
   // ---------------------------------------------
   {
@@ -96,10 +122,195 @@ window.ObjectLibrary = [
     defaultSpriteWidth: 16,
     defaultSpriteHeight: 16,
 
+    // Tamaño exclusivo del escenario. El PNG original es 24 × 30,
+    // por lo que 8 × 10 conserva su proporción 4:5.
+    worldRenderWidth: 8,
+    worldRenderHeight: 10,
+
     defaultHitboxWidth: 16,
     defaultHitboxHeight: 16,
 
     pickup: true,
+    alwaysOnTop: true,
+  },
+
+  // ---------------------------------------------
+  // Item 002 - LLAVE PLATEADA
+  // ---------------------------------------------
+  {
+    id: "002",
+    type: "item",
+    name: "Llave plateada",
+
+    description: "Una llave que parece abrir alguna puerta del patio.",
+
+    sprite: "002_key_patio.png",
+
+    defaultSpriteWidth: 16,
+    defaultSpriteHeight: 16,
+
+    // Mantiene en el escenario el mismo tamaÃ±o visual que la llave 001.
+    worldRenderWidth: 8,
+    worldRenderHeight: 10,
+
+    defaultHitboxWidth: 16,
+    defaultHitboxHeight: 16,
+
+    pickup: true,
+
+    blockedByNpcMessages: {
+      pj1: "Primero tengo que quitar esa planta de en medio. Así no puedo alcanzar la llave.",
+      pj2: "Esa planta arruina la composición. ¡No puedo alcanzar la llave!",
+      pj3: "La planta bloquea el acceso. Necesito otra solución para coger la llave.",
+      pj4: "¡Maldita planta! Si no se aparta, no puedo coger esa llave.",
+      pj5: "¡Eh, planta dentuda! ¡Aparta, que quiero coger esa llave!",
+      pj6: "Pobrecita, no quiero hacerle daño. Pero no alcanzo la llave.",
+    },
+  },
+
+  // ---------------------------------------------
+  // Item 005 - CINTA VHS
+  // ---------------------------------------------
+  {
+    id: "005",
+    type: "item",
+    name: "Cinta VHS",
+
+    description: "Una vieja cinta VHS. Parece estar en buen estado.",
+
+    sprite: "005_Cinta VHS.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 30,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 30,
+
+    pickup: true,
+  },
+
+  // ---------------------------------------------
+  // Item 006 - INSECTICIDA
+  // ---------------------------------------------
+  {
+    id: "006",
+    type: "item",
+    name: "Insecticida",
+
+    description: "De la marca Kukal, lo mata todo.",
+
+    sprite: "006_Insecticida.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 30,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 30,
+
+    pickup: true,
+  },
+
+  // ---------------------------------------------
+  // Item 007 - ENSALADA
+  // ---------------------------------------------
+  {
+    id: "007",
+    type: "item",
+    name: "Ensalada",
+
+    description: "Es una ensalada de cera, un buen adorno.",
+
+    sprite: "007_Ensalada.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 30,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 30,
+
+    pickup: true,
+  },
+
+  // ---------------------------------------------
+  // Item 028 - BARRA DE METAL
+  // ---------------------------------------------
+  {
+    id: "028",
+    type: "item",
+    name: "Barra de metal",
+
+    description: "Una barra de metal resistente.",
+
+    sprite: "028_Barra de metál.png",
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 30,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 30,
+
+    pickup: true,
+  },
+
+  // ---------------------------------------------
+  // Objeto con estados - BUZÓN
+  // Dimensiones nativas comprobadas en ambos PNG: 28 × 45 píxeles.
+  // La hitbox conserva 48 × 60 para no alterar la colisión ya configurada.
+  // ---------------------------------------------
+  {
+    id: "!buzon",
+    type: "stateful",
+    name: "Buzón",
+
+    description: "Es un buzón típico americano",
+
+    sprite: "!buzon1_Cerrado.png",
+    defaultState: "cerrado",
+    stateSprites: {
+      cerrado: "!buzon1_Cerrado.png",
+      abierto: "!buzon2_Abierto.png",
+    },
+
+    defaultSpriteWidth: 28,
+    defaultSpriteHeight: 45,
+
+    defaultHitboxWidth: 48,
+    defaultHitboxHeight: 60,
+
+    pickup: false,
+    solid: true,
+    interactionSide: "left",
+    interactionFacing: "right",
+    containedInteractionSide: "left",
+    containedInteractionFacing: "right",
+  },
+
+  // ---------------------------------------------
+  // Objeto con estados - INTERRUPTOR DE LUZ
+  // Dimensiones nativas comprobadas en ambos PNG: 24 × 30 píxeles.
+  // ---------------------------------------------
+  {
+    id: "!interruptor",
+    type: "stateful",
+    name: "Interruptor",
+
+    description: "Un interruptor de la luz.",
+
+    sprite: "!Interruptor1.png",
+    defaultState: "apagado",
+    stateSprites: {
+      apagado: "!Interruptor1.png",
+      encendido: "!Interruptor2.png",
+    },
+
+    defaultSpriteWidth: 24,
+    defaultSpriteHeight: 30,
+
+    defaultHitboxWidth: 24,
+    defaultHitboxHeight: 30,
+
+    pickup: false,
+    solid: true,
   },
 
   // ---------------------------------------------
@@ -418,6 +629,8 @@ window.ObjectLibrary = [
 
     locked: true,
     opened: false,
+    requiredItem: "002",
+    relockOnClose: false,
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -613,7 +826,7 @@ window.ObjectLibrary = [
   },
 
   // ---------------------------------------------
-  // Door 14 - Cuarto de estar / Entrada - map 3
+  // Door 14 - Cuarto sin pomo / Entrada - map 2
   // ---------------------------------------------
   {
     id: "door_14",
@@ -622,7 +835,7 @@ window.ObjectLibrary = [
     type: "door",
     name: "Puerta",
 
-    description: "Es una puerta.",
+    description: "Es una puerta sin pomo.",
 
     sprite: "door_14.png",
 
@@ -637,6 +850,9 @@ window.ObjectLibrary = [
     locked: true,
     opened: false,
 
+    requiresForcedOpen: true,
+    forceOpenItem: "028",
+
     interactionMode: "inside",
     teleportMode: "inside",
 
@@ -650,7 +866,7 @@ window.ObjectLibrary = [
   },
 
   // ---------------------------------------------
-  // Door 15 - Cuarto de estar / Salida - map 2
+  // Door 15 - Cuarto sin pomo / Salida - map 8
   // ---------------------------------------------
   {
     id: "door_15",
@@ -673,6 +889,8 @@ window.ObjectLibrary = [
 
     locked: true,
     opened: false,
+
+    requiresForcedOpen: true,
 
     interactionMode: "inside",
     teleportMode: "inside",

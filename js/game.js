@@ -33,6 +33,8 @@ window.GameModule = (() => {
   // SPRITES DE OBJETOS DEL MAPA
   // -------------------------------------------------------
   let objectSprites = {};
+  let foregroundGraphicSprites = {};
+  let npcSprites = {};
 
   // -------------------------------------------------------
   // MEDIDAS DEL SPRITE DEL PERSONAJE
@@ -168,14 +170,16 @@ window.GameModule = (() => {
     pendingInteraction: null,
     pendingTeleport: null,
     pendingHotspot: null,
+    pendingNpc: null,
+    pendingNpcDistance: null,
 
     // -------------------------------------------------------
     // INVENTARIO POR PERSONAJE
     // -------------------------------------------------------
     inventory: {
-      slot1: [],
-      slot2: [],
-      slot3: [],
+      slot1: InventoryManager.createEmptyInventory(),
+      slot2: InventoryManager.createEmptyInventory(),
+      slot3: InventoryManager.createEmptyInventory(),
     },
 
     // -----------------------------------------
@@ -193,7 +197,12 @@ window.GameModule = (() => {
   async function init() {
     canvas = document.getElementById("game-canvas");
     actionLine = document.getElementById("action-line");
+    DialogueManager.initialize(
+      document.getElementById("game-screen"),
+      actionLine,
+    );
     createVerbButtons();
+    ChestManager.initialize();
 
     if (!canvas) return;
 
@@ -229,6 +238,8 @@ window.GameModule = (() => {
       FRAME_WIDTH,
       FRAME_HEIGHT,
       getActiveCharacter(),
+      foregroundGraphicSprites,
+      npcSprites,
     );
   }
 
@@ -267,12 +278,19 @@ window.GameModule = (() => {
 
     if (mapData) {
       DoorManager.applyPersistentObjectStates(currentMapName, mapData?.objects);
+      StatefulObjectManager.applyObjectStates(mapData?.objects);
 
       await loadMapImage();
 
       objectSprites = {};
+      foregroundGraphicSprites = {};
+      npcSprites = {};
 
-      await loadObjectSprites();
+      await Promise.all([
+        loadObjectSprites(),
+        loadForegroundGraphicSprites(),
+        loadNpcSprites(),
+      ]);
 
       placePlayerAtSpawn();
       CameraManager.centerCameraOnPlayer(
@@ -378,6 +396,13 @@ window.GameModule = (() => {
       if (!mapData.tileWidth) mapData.tileWidth = 24;
       if (!mapData.tileHeight) mapData.tileHeight = 30;
       if (!mapData.image) mapData.image = "map1.png";
+      if (!Array.isArray(mapData.foregroundGraphics)) {
+        mapData.foregroundGraphics = [];
+      }
+      if (!Array.isArray(mapData.npcs)) {
+        mapData.npcs = [];
+      }
+      mapData.npcs.forEach((npc) => NpcManager.normalizeInstance(npc));
 
       if (!mapData.cols && mapData.walkable?.[0]?.length) {
         mapData.cols = mapData.walkable[0].length;
@@ -403,9 +428,7 @@ window.GameModule = (() => {
   // DEVUELVE EL TEXTO VISIBLE DE UN VERBO
   // -------------------------------------------------------
   function getVerbLabel(id) {
-    const verb = window.VerbLibrary.find((v) => v.id === id);
-
-    return verb?.label ?? id;
+    return window.VerbManager.getLabel(id);
   }
 
   // -------------------------------------------------------
@@ -443,13 +466,20 @@ window.GameModule = (() => {
 
     // Aplicar primero los estados persistentes
     DoorManager.applyPersistentObjectStates(currentMapName, mapData?.objects);
+    StatefulObjectManager.applyObjectStates(mapData?.objects);
     // Cargar imagen del mapa
     await loadMapImage();
 
     // Vaciar y cargar los sprites del estado correcto
     objectSprites = {};
+    foregroundGraphicSprites = {};
+    npcSprites = {};
 
-    await loadObjectSprites();
+    await Promise.all([
+      loadObjectSprites(),
+      loadForegroundGraphicSprites(),
+      loadNpcSprites(),
+    ]);
 
     // -------------------------------------------------------
     // MOVER SOLO AL PERSONAJE ACTIVO
@@ -470,6 +500,8 @@ window.GameModule = (() => {
     state.path = [];
     state.pathIndex = 0;
     state.pendingHotspot = null;
+    state.pendingNpc = null;
+    state.pendingNpcDistance = null;
 
     CameraManager.centerCameraOnPlayer(
       getActiveCharacter(),
@@ -492,6 +524,8 @@ window.GameModule = (() => {
       FRAME_WIDTH,
       FRAME_HEIGHT,
       getActiveCharacter(),
+      foregroundGraphicSprites,
+      npcSprites,
     );
   }
 
@@ -508,12 +542,19 @@ window.GameModule = (() => {
     await loadMapData(mapName);
 
     DoorManager.applyPersistentObjectStates(currentMapName, mapData?.objects);
+    StatefulObjectManager.applyObjectStates(mapData?.objects);
 
     await loadMapImage();
 
     objectSprites = {};
+    foregroundGraphicSprites = {};
+    npcSprites = {};
 
-    await loadObjectSprites();
+    await Promise.all([
+      loadObjectSprites(),
+      loadForegroundGraphicSprites(),
+      loadNpcSprites(),
+    ]);
 
     const player = getActiveCharacter();
 
@@ -531,6 +572,8 @@ window.GameModule = (() => {
     state.pendingInteraction = null;
     state.pendingTeleport = null;
     state.pendingHotspot = null;
+    state.pendingNpc = null;
+    state.pendingNpcDistance = null;
 
     state.path = [];
     state.pathIndex = 0;
@@ -557,6 +600,8 @@ window.GameModule = (() => {
       FRAME_WIDTH,
       FRAME_HEIGHT,
       player,
+      foregroundGraphicSprites,
+      npcSprites,
     );
   }
 
@@ -566,9 +611,50 @@ window.GameModule = (() => {
   async function loadObjectSprites() {
     if (!mapData?.objects) return;
 
-    const promises = mapData.objects.map((obj) => {
+    const spriteNames = [
+      ...new Set(
+        mapData.objects.flatMap((obj) =>
+          StatefulObjectManager.getObjectSpriteNames(obj),
+        ),
+      ),
+    ];
+
+    const promises = spriteNames.map((spriteName) => {
       return new Promise((resolve) => {
-        if (!obj.sprite) {
+        const img = new Image();
+
+        img.onload = () => {
+          objectSprites[spriteName] = img;
+          resolve();
+        };
+
+        img.onerror = () => {
+          console.warn(`No se pudo cargar el objeto: ${spriteName}`);
+          resolve();
+        };
+
+        img.src = `./img/objects/${spriteName}`;
+      });
+    });
+
+    await Promise.all(promises);
+  }
+
+  async function loadForegroundGraphicSprites() {
+    if (!Array.isArray(mapData?.foregroundGraphics)) return;
+
+    const typeIds = [
+      ...new Set(mapData.foregroundGraphics.map((graphic) => graphic.typeId)),
+    ];
+
+    const promises = typeIds.map((typeId) => {
+      return new Promise((resolve) => {
+        const libraryItem = window.ForegroundGraphicLibrary.find(
+          (item) => item.id === typeId,
+        );
+
+        if (!libraryItem?.sprite) {
+          console.warn(`Gráfico traspasable desconocido: ${typeId}`);
           resolve();
           return;
         }
@@ -576,16 +662,68 @@ window.GameModule = (() => {
         const img = new Image();
 
         img.onload = () => {
-          objectSprites[obj.sprite] = img;
+          foregroundGraphicSprites[typeId] = img;
           resolve();
         };
 
         img.onerror = () => {
-          console.warn(`No se pudo cargar el objeto: ${obj.sprite}`);
+          console.warn(
+            `No se pudo cargar el gráfico traspasable: ${libraryItem.sprite}`,
+          );
           resolve();
         };
 
-        img.src = `./img/objects/${obj.sprite}`;
+        img.src = `./img/traspasables/${libraryItem.sprite}`;
+      });
+    });
+
+    await Promise.all(promises);
+  }
+
+  async function loadNpcSprites() {
+    if (!Array.isArray(mapData?.npcs)) return;
+
+    const typeIds = [...new Set(mapData.npcs.map((npc) => npc.typeId))];
+    const assets = typeIds.flatMap((typeId) => {
+      const libraryItem = NpcManager.getLibraryItem(typeId);
+      if (!libraryItem?.sprite) {
+        console.warn(`NPC desconocido: ${typeId}`);
+        return [];
+      }
+
+      return [
+        {
+          key: typeId,
+          folder: "npcs",
+          sprite: libraryItem.sprite,
+        },
+        ...Object.entries(libraryItem.overlayAnimations ?? {}).map(
+          ([animationId, animation]) => ({
+            key: `${typeId}:overlay:${animationId}`,
+            folder: animation.spriteFolder ?? "animations",
+            sprite: animation.sprite,
+          }),
+        ),
+      ];
+    });
+
+    const promises = assets.map((asset) => {
+      return new Promise((resolve) => {
+        if (!asset.sprite) {
+          resolve();
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          npcSprites[asset.key] = img;
+          resolve();
+        };
+        img.onerror = () => {
+          console.warn(`No se pudo cargar el recurso de NPC: ${asset.sprite}`);
+          resolve();
+        };
+        img.src = `./img/${asset.folder}/${asset.sprite}`;
       });
     });
 
@@ -695,6 +833,8 @@ window.GameModule = (() => {
       FRAME_WIDTH,
       FRAME_HEIGHT,
       getActiveCharacter(),
+      foregroundGraphicSprites,
+      npcSprites,
     );
 
     requestAnimationFrame(gameLoop);
@@ -715,6 +855,8 @@ window.GameModule = (() => {
       mapImage,
       objectSprites,
       playerSprites,
+      foregroundGraphicSprites,
+      npcSprites,
       MAP_SCALE,
       PLAYER_SCALE,
       FRAME_WIDTH,
@@ -732,6 +874,11 @@ window.GameModule = (() => {
   // -------------------------------------------------------
   function update(delta) {
     if (!mapData) return;
+    if (ChestManager.isOpen()) return;
+
+    NpcManager.updateAnimations(mapData.npcs, delta);
+
+    if (NpcManager.isInsecticideEventPending()) return;
 
     const controllerContext = getPlayerControllerContext();
 
@@ -754,6 +901,8 @@ window.GameModule = (() => {
           mapImage,
           objectSprites,
           playerSprites,
+          foregroundGraphicSprites,
+          npcSprites,
           MAP_SCALE,
           PLAYER_SCALE,
           FRAME_WIDTH,
@@ -770,9 +919,24 @@ window.GameModule = (() => {
           state.pendingHotspot,
           state,
           actionLine,
+          currentMapName,
+          mapData,
         );
 
         state.pendingHotspot = null;
+      }
+
+      if (state.pendingNpc) {
+        InteractionManager.handleNpcInteraction(
+          state.pendingNpc,
+          state,
+          actionLine,
+          getVerbLabel,
+          currentMapName,
+          mapData,
+        );
+        state.pendingNpc = null;
+        state.pendingNpcDistance = null;
       }
 
       PlayerController.updatePlayerByMouseTarget(delta, controllerContext);

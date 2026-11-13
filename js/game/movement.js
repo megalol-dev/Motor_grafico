@@ -26,14 +26,7 @@ function isBlockedByObject(worldX, worldY, mapData) {
   }
 
   for (const obj of mapData.objects) {
-    if (obj.type !== "door") {
-      continue;
-    }
-
-    // puerta abierta -> no bloquea
-    if (obj.opened) {
-      continue;
-    }
+    if (!WorldManager.isObjectSolid(obj)) continue;
 
     const inside =
       worldX >= obj.x &&
@@ -47,6 +40,10 @@ function isBlockedByObject(worldX, worldY, mapData) {
   }
 
   return false;
+}
+
+function isBlockedByNpc(worldX, worldY, mapData) {
+  return NpcManager.isPointBlockedByNpc(worldX, worldY, mapData);
 }
 
 // -------------------------------------------------------
@@ -73,6 +70,10 @@ function canStandAt(worldX, worldY, mapData, FOOT_OFFSET_Y) {
   }
 
   if (MovementManager.isBlockedByObject(worldX, worldY, mapData)) {
+    return false;
+  }
+
+  if (MovementManager.isBlockedByNpc(worldX, worldY, mapData)) {
     return false;
   }
 
@@ -132,4 +133,5 @@ window.MovementManager = {
   tryMovePlayer,
   canStandAt,
   isBlockedByObject,
+  isBlockedByNpc,
 };
