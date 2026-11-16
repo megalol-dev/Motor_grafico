@@ -88,7 +88,7 @@
     [
       0,
       0,
-      1,
+      0,
       1,
       1,
       1,
@@ -162,14 +162,21 @@
         "y": 0,
         "width": 0,
         "height": 0
-      }
+      },
+      "state": null,
+      "stateSprites": null,
+      "containedObjectId": null,
+      "blockedByNpcId": null,
+      "alwaysOnTop": false,
+      "worldRenderWidth": null,
+      "worldRenderHeight": null
     },
     {
       "id": "object_2",
       "name": "Barra de metal",
       "description": "Una barra de metal resistente.",
-      "x": 88,
-      "y": 97,
+      "x": 211,
+      "y": 89,
       "spriteWidth": 24,
       "spriteHeight": 30,
       "hitboxWidth": 24,
@@ -199,7 +206,14 @@
         "y": 0,
         "width": 0,
         "height": 0
-      }
+      },
+      "state": null,
+      "stateSprites": null,
+      "containedObjectId": null,
+      "blockedByNpcId": null,
+      "alwaysOnTop": false,
+      "worldRenderWidth": null,
+      "worldRenderHeight": null
     }
   ],
   "hotspots": [],

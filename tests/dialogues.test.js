@@ -239,11 +239,30 @@ root.click("canvas");
 assert.equal(DialogueManager.isActive(), false);
 assert.equal(root.listeners.click.length, 1);
 
+const longDialogue =
+  "La descomposiciÃ³n de materia orgÃ¡nica produce gases bastante desagradables. Mejor no investigar.";
+assert.equal(
+  DialogueManager.start([{ speaker: "Milton", text: longDialogue }], {
+    state,
+    actionLine,
+  }),
+  true,
+);
+assert.equal(findByClass(actionLine, "dialogue-text").textContent, longDialogue);
+root.click("action-line");
+assert.equal(DialogueManager.isActive(), false);
+
 const dialogueSource = fs.readFileSync("js/game/dialogues.js", "utf8");
 assert.doesNotMatch(dialogueSource, /setTimeout|setInterval/);
 const gameCss = fs.readFileSync("css/game.css", "utf8");
 assert.match(gameCss, /dialogueIndicatorBlink 2s steps\(1, end\) infinite/);
 assert.match(gameCss, /#ff1c1c/);
 assert.match(gameCss, /#ffe600/);
+assert.match(gameCss, /\.dialogue-text\s*\{[^}]*flex:\s*1 1 auto/s);
+assert.match(gameCss, /\.dialogue-text\s*\{[^}]*overflow-wrap:\s*break-word/s);
+assert.match(gameCss, /\.dialogue-text\s*\{[^}]*word-break:\s*normal/s);
+assert.match(gameCss, /\.dialogue-content\s*\{[^}]*min-width:\s*0/s);
+assert.match(gameCss, /\.action-line\.dialogue-active\s*\{[^}]*font-size:\s*clamp/s);
+assert.match(gameCss, /\.action-line\.dialogue-active\s*\{[^}]*overflow-y:\s*auto/s);
 
 console.log("Interactive dialogue sequencing and input capture: OK");

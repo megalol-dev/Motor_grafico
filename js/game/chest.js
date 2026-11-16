@@ -30,6 +30,8 @@ function getChestItems() {
     GameState.chest.items = fixedSlots;
   }
 
+  window.DeathManager?.flushPendingToChest?.(GameState.chest.items);
+
   return GameState.chest.items;
 }
 
@@ -237,6 +239,8 @@ function takeItem(item, state = activeState, actionLine = activeActionLine) {
     InventoryManager.refreshInventoryUI(state, actionLine);
     return false;
   }
+
+  window.DeathManager?.flushPendingToChest?.(chestItems);
 
   InventoryManager.refreshInventoryUI(state, actionLine);
   showChestMessage(

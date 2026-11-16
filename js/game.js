@@ -77,6 +77,7 @@ window.GameModule = (() => {
       x: 0,
       y: 0,
     },
+    deathCameraFocus: null,
 
     // -------------------------------------------------------
     // PERSONAJE PRINCIPAL CON QUE SE EMPIEZA (CONTROLABLE)
@@ -203,6 +204,7 @@ window.GameModule = (() => {
     );
     createVerbButtons();
     ChestManager.initialize();
+    DeathManager.updateCharacterButtons();
 
     if (!canvas) return;
 
@@ -320,6 +322,7 @@ window.GameModule = (() => {
     updatePartyButtons();
 
     state.activeCharacter = "slot1";
+    DeathManager.updateCharacterButtons();
   }
 
   // -------------------------------------------------------
@@ -488,8 +491,15 @@ window.GameModule = (() => {
 
     player.currentMap = mapName;
 
-    player.x = spawnX * mapData.tileWidth + mapData.tileWidth / 2;
-    player.y = (spawnY + 1) * mapData.tileHeight;
+    const resolvedSpawnX = Number.isFinite(spawnX)
+      ? spawnX
+      : mapData.spawn?.x ?? 0;
+    const resolvedSpawnY = Number.isFinite(spawnY)
+      ? spawnY
+      : mapData.spawn?.y ?? 0;
+
+    player.x = resolvedSpawnX * mapData.tileWidth + mapData.tileWidth / 2;
+    player.y = (resolvedSpawnY + 1) * mapData.tileHeight;
     player.direction = direction;
     player.moving = false;
 
@@ -875,6 +885,7 @@ window.GameModule = (() => {
   function update(delta) {
     if (!mapData) return;
     if (ChestManager.isOpen()) return;
+    if (DeathManager.isInputBlocked()) return;
 
     NpcManager.updateAnimations(mapData.npcs, delta);
 
@@ -944,13 +955,140 @@ window.GameModule = (() => {
 
     MovementManager.updatePlayerAnimation(delta, getActiveCharacter());
 
-    CameraManager.updateCamera(
-      getActiveCharacter(),
-      state,
+    if (!state.deathCameraFocus) {
+      CameraManager.updateCamera(
+        getActiveCharacter(),
+        state,
+        canvas,
+        mapData,
+        MAP_SCALE,
+      );
+    }
+  }
+
+  async function handleCharacterDeath(slot, source = null) {
+    if (
+      DeathManager.isInputBlocked() ||
+      DeathManager.isSlotDead(slot)
+    ) {
+      return false;
+    }
+
+    const deadCharacter = DeathManager.getCharacterBySlot(state, slot);
+    if (!deadCharacter) return false;
+
+    const characterName = DeathManager.getCharacterName(deadCharacter);
+    DeathManager.setSequenceActive(true);
+    if (actionLine) {
+      actionLine.textContent = VerbManager.formatPrompt("Walk to");
+    }
+
+    state.target.active = false;
+    state.path = [];
+    state.pathIndex = 0;
+    state.pendingInteraction = null;
+    state.pendingHotspot = null;
+    state.pendingNpc = null;
+    state.pendingNpcDistance = null;
+    state.pendingTeleport = null;
+    state.selectedInventoryItem = null;
+    state.player.moving = false;
+    state.companions.forEach((character) => {
+      character.moving = false;
+    });
+
+    await DeathManager.waitBeforeDeath();
+    await DeathManager.fadeToBlack();
+
+    if (!DeathManager.markDead(state, slot)) {
+      await DeathManager.fadeFromBlack();
+      DeathManager.setSequenceActive(false);
+      return false;
+    }
+
+    DeathManager.closeDeathSource(source, currentMapName, mapData);
+
+    const nextSlot = DeathManager.getNextLivingSlot(slot);
+    const nextLocation = nextSlot
+      ? DeathManager.captureCharacterLocation(state, nextSlot)
+      : null;
+
+    // Solo el fallecido visita temporalmente map1. De este modo, cargar la
+    // presentación de la tumba nunca sobrescribe la ubicación de un superviviente.
+    state.activeCharacter = slot;
+    state.deathCameraFocus = null;
+
+    await changeMap("map1", null, null, "down");
+
+    const grave = DeathManager.findGrave(mapData, slot);
+    if (grave) {
+      const graveWidth = grave.spriteWidth ?? grave.hitboxWidth ?? 0;
+      const graveHeight = grave.spriteHeight ?? grave.hitboxHeight ?? 0;
+      state.deathCameraFocus = {
+        x: grave.x + graveWidth / 2,
+        y: grave.y + graveHeight / 2,
+      };
+      CameraManager.centerCameraOnPoint(
+        state.deathCameraFocus.x,
+        state.deathCameraFocus.y,
+        state,
+        canvas,
+        mapData,
+        MAP_SCALE,
+      );
+    } else {
+      console.warn(
+        `No se encontró ${DeathManager.getGraveTypeId(slot)} en map1.`,
+      );
+    }
+
+    RenderManager.render(
+      ctx,
       canvas,
+      mapImageLoaded,
+      mapImage,
+      state,
       mapData,
+      objectSprites,
+      playerSprites,
       MAP_SCALE,
+      PLAYER_SCALE,
+      FRAME_WIDTH,
+      FRAME_HEIGHT,
+      getActiveCharacter(),
+      foregroundGraphicSprites,
+      npcSprites,
     );
+
+    await DeathManager.revealDeathScene();
+    await DeathManager.typeDeathMessage(
+      `${characterName} murió por un olor tóxico y nauseabundo.`,
+    );
+
+    if (DeathManager.areAllDead()) {
+      state.activeCharacter = null;
+      DeathManager.setSequenceActive(false);
+      DeathManager.showOverlay("GAME OVER", true);
+      if (actionLine) actionLine.textContent = "GAME OVER";
+      stop();
+      return true;
+    }
+
+    state.activeCharacter = nextSlot;
+    state.deathCameraFocus = null;
+    await changeMapKeepingPosition(
+      nextLocation.mapName,
+      nextLocation.x,
+      nextLocation.y,
+      nextLocation.direction,
+    );
+
+    InventoryManager.refreshInventoryUI(state, actionLine);
+    if (actionLine) actionLine.textContent = `${characterName} ha muerto.`;
+    await DeathManager.fadeFromBlack();
+    DeathManager.setSequenceActive(false);
+    DeathManager.updateCharacterButtons();
+    return true;
   }
 
   // -------------------------------------------------------
@@ -1006,5 +1144,7 @@ window.GameModule = (() => {
     start,
     stop,
     setupSelectedParty,
+    handleCharacterDeath,
+    getState: () => state,
   };
 })();

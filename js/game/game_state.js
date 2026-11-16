@@ -25,4 +25,17 @@ window.GameState = {
   chest: {
     items: [],
   },
+
+  // Muertes permanentes por posición dentro del equipo seleccionado.
+  deaths: {
+    slots: {
+      slot1: false,
+      slot2: false,
+      slot3: false,
+    },
+    pendingItems: [],
+    boundItems: [],
+    sequenceActive: false,
+    gameOver: false,
+  },
 };

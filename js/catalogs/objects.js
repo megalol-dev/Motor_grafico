@@ -314,6 +314,34 @@ window.ObjectLibrary = [
   },
 
   // ---------------------------------------------
+  // Objeto con estados - CUBO DE BASURA MORTAL
+  // Dimensiones nativas comprobadas en ambos PNG: 28 × 45 píxeles.
+  // ---------------------------------------------
+  {
+    id: "!cuboBasura",
+    type: "stateful",
+    name: "Cubo de basura",
+
+    description: "Un cubo viejo de basura.",
+
+    sprite: "!CuboBasura_1.png",
+    defaultState: "cerrado",
+    stateSprites: {
+      cerrado: "!CuboBasura_1.png",
+      abierto: "!CuboBasura_2.png",
+    },
+
+    defaultSpriteWidth: 28,
+    defaultSpriteHeight: 45,
+
+    defaultHitboxWidth: 28,
+    defaultHitboxHeight: 45,
+
+    pickup: false,
+    solid: true,
+  },
+
+  // ---------------------------------------------
   // Door 0 - PUERTA PRINCIPAL - map 1
   // ---------------------------------------------
   {
@@ -918,5 +946,49 @@ window.ObjectLibrary = [
 
     defaultHitboxWidth: 24,
     defaultHitboxHeight: 28,
+  },
+
+  // ---------------------------------------------
+  // Tumbas por posición del equipo. Deben permanecer
+  // al final del catálogo para el selector del editor.
+  // ---------------------------------------------
+  {
+    id: "tumba_1",
+    type: "grave",
+    name: "Tumba 1",
+    description: "La tumba del primer integrante del equipo.",
+    sprite: "tumba_1.png",
+    defaultSpriteWidth: 54,
+    defaultSpriteHeight: 59,
+    defaultHitboxWidth: 54,
+    defaultHitboxHeight: 59,
+    pickup: false,
+    solid: false,
+  },
+  {
+    id: "tumba_2",
+    type: "grave",
+    name: "Tumba 2",
+    description: "La tumba del segundo integrante del equipo.",
+    sprite: "tumba_2.png",
+    defaultSpriteWidth: 54,
+    defaultSpriteHeight: 59,
+    defaultHitboxWidth: 54,
+    defaultHitboxHeight: 59,
+    pickup: false,
+    solid: false,
+  },
+  {
+    id: "tumba_3",
+    type: "grave",
+    name: "Tumba 3",
+    description: "La tumba del tercer integrante del equipo.",
+    sprite: "tumba_3.png",
+    defaultSpriteWidth: 54,
+    defaultSpriteHeight: 59,
+    defaultHitboxWidth: 54,
+    defaultHitboxHeight: 59,
+    pickup: false,
+    solid: false,
   },
 ];

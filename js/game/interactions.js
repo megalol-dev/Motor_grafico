@@ -18,6 +18,7 @@ function getObjectAt(worldX, worldY, mapData) {
 
     if (!obj.visible) continue;
     if (obj.collected) continue;
+    if (window.DeathManager?.isGrave?.(obj)) continue;
 
     const worldRenderSize =
       window.StatefulObjectManager?.getWorldRenderSize(obj) ?? {
@@ -61,8 +62,23 @@ function getObjectName(obj) {
   return getObjectLibraryItem(obj)?.name ?? obj?.name ?? "";
 }
 
-function getObjectDescription(obj) {
+function getObjectDescription(obj, state = null) {
   const libraryItem = getObjectLibraryItem(obj);
+
+  if (libraryItem?.id === "!cuboBasura") {
+    if (obj.state === "abierto") return "Ya está abierto.";
+
+    const messages = {
+      pj1: "Un cubo viejo de basura... Huele fatal. Será mejor no acercarse demasiado.",
+      pj2: "¡Qué horror! Ese olor es una auténtica agresión a los sentidos.",
+      pj3: "La descomposición de materia orgánica produce gases bastante desagradables.",
+      pj4: "¡Puaj! ¡Esto apesta más que mis zapatillas después de entrenar!",
+      pj5: "¡Eh, pues no huele tan mal! Me recuerda a mi habitación. ¡Qué buenos tiempos!",
+      pj6: "¡Qué asco! ¿Cómo puede alguien dejar que se acumule tanta basura?",
+    };
+
+    return messages[getActiveCharacterTypeId(state)] ?? libraryItem.description;
+  }
 
   if (libraryItem?.forceOpenItem) {
     return libraryItem.description;
@@ -519,6 +535,8 @@ function handleNpcInteraction(
   currentMapName = null,
   mapData = null,
 ) {
+  if (window.DeathManager?.isSlotDead?.(state?.activeCharacter)) return false;
+
   if (
     blockInteractionInDarkness(
       npc,
@@ -612,6 +630,8 @@ function handleHotspotInteraction(
   currentMapName = null,
   mapData = null,
 ) {
+  if (window.DeathManager?.isSlotDead?.(state?.activeCharacter)) return false;
+
   if (
     blockInteractionInDarkness(
       hotspot,
@@ -700,6 +720,8 @@ function handleObjectInteraction(
   getVerbLabel,
   changeMap,
 ) {
+  if (window.DeathManager?.isSlotDead?.(state?.activeCharacter)) return false;
+
   const verb = state.currentVerb.toLowerCase();
   const libraryItem = getObjectLibraryItem(obj);
   const requiredItem = obj.requiredItem ?? libraryItem?.requiredItem ?? null;
@@ -776,7 +798,7 @@ function handleObjectInteraction(
   // ---------------------------------------------------
   if (verb === "what is") {
     InteractionManager.showTemporaryMessage(
-      getObjectDescription(obj),
+      getObjectDescription(obj, state),
       state,
       actionLine,
     );
@@ -1006,6 +1028,88 @@ function handleObjectInteraction(
     if (libraryItem?.id === "000") {
       faceActiveCharacter(state, "up");
       ChestManager.open(state, actionLine);
+      return;
+    }
+
+    if (libraryItem?.id === "!cuboBasura") {
+      if (obj.state === "abierto" || obj.deathTriggered === true) {
+        InteractionManager.showTemporaryMessage(
+          "Ya está abierto.",
+          state,
+          actionLine,
+        );
+        EventsManager.selectDefaultVerb(state, actionLine, true);
+        return;
+      }
+
+      const deathSlot = state.activeCharacter;
+      const activeCharacter = getActiveCharacterFromState(state);
+      const characterName = window.DeathManager?.getCharacterName?.(
+        activeCharacter,
+      ) ?? "El personaje";
+      const isSpike =
+        String(activeCharacter?.sprite ?? "").toLowerCase() === "pj5";
+
+      obj.deathTriggered = !isSpike;
+      StatefulObjectManager.setObjectState(
+        obj,
+        "abierto",
+        mapData?.objects,
+        currentMapName,
+      );
+      EventsManager.selectDefaultVerb(state, actionLine, true);
+
+      RenderManager.render(
+        ctx,
+        canvas,
+        mapImageLoaded,
+        mapImage,
+        state,
+        mapData,
+        objectSprites,
+        playerSprites,
+        MAP_SCALE,
+        PLAYER_SCALE,
+        FRAME_WIDTH,
+        FRAME_HEIGHT,
+        activeCharacter,
+        foregroundGraphicSprites,
+        npcSprites,
+      );
+
+      if (isSpike) {
+        InteractionManager.showTemporaryMessage(
+          "Aquí no hay nada.",
+          state,
+          actionLine,
+        );
+        obj.deathTriggered = false;
+        StatefulObjectManager.setObjectState(
+          obj,
+          "cerrado",
+          mapData?.objects,
+          currentMapName,
+        );
+        return;
+      }
+
+      const startDeath = () => {
+        void window.GameModule?.handleCharacterDeath?.(deathSlot, {
+          mapName: currentMapName,
+          objectId: obj.id,
+        });
+      };
+      const dialogueStarted = DialogueManager.start(
+        [
+          {
+            speaker: characterName,
+            text: `Un olor nauseabundo rodea a ${characterName}.`,
+          },
+        ],
+        { state, actionLine, onFinish: startDeath },
+      );
+
+      if (!dialogueStarted) startDeath();
       return;
     }
 

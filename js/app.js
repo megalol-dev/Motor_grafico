@@ -100,6 +100,7 @@ function bindUiEvents() {
     );
 
     window.ChestManager?.reset();
+    window.DeathManager?.reset();
 
     setScreen('game');
   });
@@ -140,6 +141,7 @@ function bindUiEvents() {
       );
 
       window.ChestManager?.reset();
+      window.DeathManager?.reset();
 
       setScreen('game');
     }

@@ -100,7 +100,7 @@ const door8 = clone(map5Template.objects.find((obj) => obj.typeId === "door_8"))
 const door9 = clone(map6Template.objects.find((obj) => obj.typeId === "door_9"));
 assert.ok(door8);
 assert.ok(door9);
-assert.equal(door8.requiredItem, null);
+assert.equal(door8.requiredItem ?? door8Definition.requiredItem, "002");
 assert.equal(door8.teleportTo, "map6");
 assert.equal(door8.teleportX, 8);
 assert.equal(door8.teleportY, 3);

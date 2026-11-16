@@ -23,6 +23,13 @@ function cancelPendingInteractions(state) {
   state.pendingTeleport = null;
 }
 
+function isActiveCharacterUnavailable(state) {
+  return (
+    window.DeathManager?.isInputBlocked?.() ||
+    window.DeathManager?.isSlotDead?.(state?.activeCharacter)
+  );
+}
+
 // -------------------------------------------------------
 // EVENTOS DE LOS BOTONES DE PERSONAJES
 // -------------------------------------------------------
@@ -45,7 +52,8 @@ function bindCharacterButtons(
 
       if (
         window.ChestManager?.isOpen() ||
-        window.NpcManager?.isInsecticideEventPending?.()
+        window.NpcManager?.isInsecticideEventPending?.() ||
+        window.DeathManager?.isInputBlocked?.()
       ) return;
 
       const selected = button.dataset.character;
@@ -53,6 +61,8 @@ function bindCharacterButtons(
       if (!selected) {
         return;
       }
+
+      if (window.DeathManager?.isSlotDead?.(selected)) return;
 
       // -----------------------------------------
       // Cancelar acciones del personaje anterior
@@ -73,6 +83,7 @@ function bindCharacterButtons(
       // Cambiar personaje activo
       // -----------------------------------------
       state.activeCharacter = selected;
+      state.deathCameraFocus = null;
 
       const player = getActiveCharacter();
 
@@ -108,7 +119,8 @@ function bindVerbButtons(verbButtons, state, actionLine) {
     button.addEventListener("click", () => {
       if (
         window.ChestManager?.isOpen() ||
-        window.NpcManager?.isInsecticideEventPending?.()
+        window.NpcManager?.isInsecticideEventPending?.() ||
+        isActiveCharacterUnavailable(state)
       ) return;
 
       const verb = window.VerbLibrary.find((v) => v.id === button.dataset.verb);
@@ -176,7 +188,8 @@ function bindCanvasHover(
     if (
       window.DialogueManager?.isActive() ||
       window.ChestManager?.isOpen() ||
-      window.NpcManager?.isInsecticideEventPending?.()
+      window.NpcManager?.isInsecticideEventPending?.() ||
+      isActiveCharacterUnavailable(state)
     ) {
       return;
     }
@@ -331,6 +344,8 @@ function prepareObjectInteraction(
   getActiveCharacter,
   FOOT_OFFSET_Y,
 ) {
+  if (isActiveCharacterUnavailable(state)) return false;
+
   const mapData = getMapData();
 
   cancelPendingInteractions(state);
@@ -420,7 +435,7 @@ function handleClickedObject(
   // ---------------------------------------------------
   if (verb === "what is") {
     InteractionManager.showTemporaryMessage(
-      InteractionManager.getObjectDescription(clickedObject),
+      InteractionManager.getObjectDescription(clickedObject, state),
       state,
       actionLine,
     );
@@ -525,6 +540,8 @@ function handleClickedHotspot(
   getActiveCharacter,
   FOOT_OFFSET_Y,
 ) {
+  if (isActiveCharacterUnavailable(state)) return false;
+
   const verb = state.currentVerb.toLowerCase();
   const mapData = getMapData();
 
@@ -595,6 +612,8 @@ function prepareNpcInteraction(
   getActiveCharacter,
   FOOT_OFFSET_Y,
 ) {
+  if (isActiveCharacterUnavailable(state)) return false;
+
   const mapData = getMapData();
   cancelPendingInteractions(state);
   const targetTile = PathfindingManager.findInteractionTileForNpc(
@@ -671,6 +690,9 @@ function handleGroundClick(
   FOOT_OFFSET_Y,
   getVerbLabel,
 ) {
+  if (isActiveCharacterUnavailable(state)) return false;
+
+  state.deathCameraFocus = null;
   const wasUsingSelectedItem =
     state.currentVerb.toLowerCase() === "use" && state.selectedInventoryItem;
 
@@ -748,7 +770,8 @@ function bindGameEvents(
     if (
       window.DialogueManager?.isActive() ||
       window.ChestManager?.isOpen() ||
-      window.NpcManager?.isInsecticideEventPending?.()
+      window.NpcManager?.isInsecticideEventPending?.() ||
+      isActiveCharacterUnavailable(state)
     ) {
       return;
     }
@@ -886,6 +909,7 @@ window.EventsManager = {
   bindCharacterButtons,
   bindVerbButtons,
   cancelPendingInteractions,
+  isActiveCharacterUnavailable,
   bindCanvasHover,
   clearTemporaryMessage,
   prepareObjectInteraction,

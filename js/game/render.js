@@ -118,6 +118,8 @@ function drawPlayer(
   FRAME_WIDTH,
   FRAME_HEIGHT,
 ) {
+  if (window.DeathManager?.isSlotDead?.(player?.id)) return;
+
   const drawWidth = player.width * PLAYER_SCALE;
   const drawHeight = player.height * PLAYER_SCALE;
 
@@ -168,6 +170,10 @@ function drawCompanions(
   FRAME_HEIGHT,
 ) {
   state.companions.forEach((companion) => {
+    if (window.DeathManager?.isSlotDead?.(companion.id)) {
+      return;
+    }
+
     if (companion.currentMap !== activePlayer.currentMap) {
       return;
     }
@@ -223,6 +229,8 @@ function drawCompanions(
   // -------------------------------------------------------
   if (state.activeCharacter !== "slot1") {
     const p1 = state.player;
+
+    if (window.DeathManager?.isSlotDead?.(p1.id)) return;
 
     if (p1.currentMap !== activePlayer.currentMap) {
       return;
@@ -293,20 +301,31 @@ function drawMap(ctx, mapImageLoaded, mapImage, state, canvas, MAP_SCALE) {
 function drawObjects(ctx, mapData, objectSprites, state, MAP_SCALE) {
   if (!mapData?.objects) return;
 
-  const visibleObjects = mapData.objects.filter(
-    (obj) => obj.visible && !obj.collected,
+  const visibleObjects = mapData.objects.filter((obj) => {
+    if (!obj.visible || obj.collected) return false;
+    if (window.DeathManager?.isGrave?.(obj)) {
+      return DeathManager.shouldRenderGrave(obj);
+    }
+    return true;
+  });
+  const ordinaryObjects = visibleObjects.filter(
+    (obj) => !window.DeathManager?.isGrave?.(obj),
+  );
+  const graveObjects = visibleObjects.filter((obj) =>
+    window.DeathManager?.isGrave?.(obj),
   );
   const orderedObjects = [
-    ...visibleObjects.filter(
+    ...ordinaryObjects.filter(
       (obj) =>
         !(window.StatefulObjectManager?.isAlwaysOnTop(obj) ??
           obj.alwaysOnTop === true),
     ),
-    ...visibleObjects.filter(
+    ...ordinaryObjects.filter(
       (obj) =>
         window.StatefulObjectManager?.isAlwaysOnTop(obj) ??
         obj.alwaysOnTop === true,
     ),
+    ...graveObjects,
   ];
 
   orderedObjects.forEach((obj) => {
@@ -412,6 +431,7 @@ function drawWorldEntities(
   const characters = [state.player, ...state.companions].filter(
     (character, index, list) =>
       character.currentMap === currentMap &&
+      !window.DeathManager?.isSlotDead?.(character.id) &&
       list.findIndex((item) => item.id === character.id) === index,
   );
 
@@ -536,7 +556,7 @@ function render(
   foregroundGraphicSprites,
   npcSprites,
 ) {
-  if (!ctx) return;
+  if (!ctx || !activePlayer) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 

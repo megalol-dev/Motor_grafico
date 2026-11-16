@@ -62,6 +62,22 @@ function centerCameraOnPlayer(player, state, canvas, mapData, MAP_SCALE) {
   );
 }
 
+function centerCameraOnPoint(worldX, worldY, state, canvas, mapData, MAP_SCALE) {
+  const viewportWidth = canvas.width / MAP_SCALE;
+  const viewportHeight = canvas.height / MAP_SCALE;
+
+  state.camera.x = CameraManager.clamp(
+    worldX - viewportWidth / 2,
+    0,
+    Math.max(0, CameraManager.getWorldWidth(mapData, canvas) - viewportWidth),
+  );
+  state.camera.y = CameraManager.clamp(
+    worldY - viewportHeight / 2,
+    0,
+    Math.max(0, CameraManager.getWorldHeight(mapData, canvas) - viewportHeight),
+  );
+}
+
 // -------------------------------------------------------
 // ACTUALIZA LA CÁMARA PARA SEGUIR AL PERSONAJE ACTIVO
 // -------------------------------------------------------
@@ -93,5 +109,6 @@ window.CameraManager = {
   getWorldWidth,
   getWorldHeight,
   centerCameraOnPlayer,
+  centerCameraOnPoint,
   updateCamera,
 };
